@@ -32,6 +32,15 @@ public class  JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         try {
+            // 对无需登录的接口直接放行（避免日志刷 JWT 过期错误）
+            String uri = request.getRequestURI();
+            if (uri.startsWith("/api/auth/login")
+                    || uri.startsWith("/api/auth/register")
+                    || uri.startsWith("/api/auth/sendCode")) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             // 1. 从请求头提取Token
             String token = jwtUtil.getTokenFromRequest(request);
             if (token == null) {
