@@ -1,9 +1,9 @@
 package edu.cqie.cqdemo.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import edu.cqie.cqdemo.entity.User;
+import edu.cqie.cqdemo.entity.Users;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface UserMapper extends BaseMapper<User> {
+public interface UserMapper extends BaseMapper<Users> {
 }

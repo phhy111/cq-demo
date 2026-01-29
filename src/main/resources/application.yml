@@ -10,6 +10,27 @@ spring:
       name: admin
       password: admin
 
+  mvc:
+    static-path-pattern: /img/**
+  web:
+      resources:
+        static-locations: file:${user.dir}/src/main/java/edu/cqie/cqdemo/img/
+
+  # 邮件配置（使用QQ邮箱发送验证码）
+  mail:
+    host: smtp.qq.com
+    username: 2686262955@qq.com          # 你的QQ邮箱
+    password: xggtlqeegzggdfji
+    port: 587
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
 # MyBatis Plus ??
 mybatis-plus:
   configuration:
@@ -25,3 +46,9 @@ jwt:
   expire-time: 7200000 # ?????2??????
   token-header: Authorization # ?????
   token-prefix: Bearer # Token??
+
+langchin4j:
+  community:
+    dashscope:
+      model-name: qwen-max
+      api-key: sk-67ce19f833ea430789b3a6d8d8e3e085
