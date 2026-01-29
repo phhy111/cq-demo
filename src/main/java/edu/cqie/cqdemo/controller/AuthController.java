@@ -99,7 +99,7 @@ public class AuthController {
             helper.setTo(dto.getEmail());
             helper.setSubject("注册验证码");
             helper.setText("行千里，致广大！欢迎使用～～智伴出行，行达天下，愿每一段旅程都轻松美好～" +
-                    "您的验证码为：\"+ code +\"，10 分钟内有效，请尽快完成注册。\n", false);
+                    "您的验证码为：\n"+ code+"，10 分钟内有效，请尽快完成注册。\n", false);
             mailSender.send(message);
             log.info("注册验证码邮件发送成功，email: {}, code: {}", dto.getEmail(), code);
         } catch (Exception e) {
@@ -107,17 +107,8 @@ public class AuthController {
             return Result.error("验证码发送失败，请稍后重试");
         }
 
-<<<<<<< HEAD
         return Result.success("验证码已发送，请在10分钟内完成注册");
     }
-=======
-        // 2. 密码加密，保存用户
-        User sysUser = new User();
-        sysUser.setUsername(registerDTO.getUsername());
-        sysUser.setPassword(passwordEncoder.encode(registerDTO.getPassword())); // BCrypt加密
-        sysUser.setExt1(registerDTO.getExt1() == null ? registerDTO.getUsername() : registerDTO.getExt1());
-        sysUserMapper.insert(sysUser);
->>>>>>> oss1
 
     /**
      * 注册接口（核心优化）
@@ -135,7 +126,7 @@ public class AuthController {
             }
 
             // 2.2 校验手机号唯一性（非必填，有值才校验）
-            String phone = registerDTO.getExt1();
+            String phone = registerDTO.getPhone();
             if (StringUtils.hasText(phone)) {
                 existUser = sysUserMapper.selectOne(new LambdaQueryWrapper<Users>()
                         .eq(Users::getPhone, phone)); // 对应Users的phone字段
@@ -187,7 +178,7 @@ public class AuthController {
             sysUser.setPassword(passwordEncoder.encode(registerDTO.getPassword()));
             sysUser.setEmail(registerDTO.getEmail());
             sysUser.setGender(registerDTO.getGender());
-            sysUser.setPhone(registerDTO.getExt1()); // 手机号映射到phone字段
+            sysUser.setPhone(registerDTO.getPhone()); // 手机号映射到phone字段
             sysUser.setAvatarUrl(avatarUrl);
             // 设置创建时间，避免 created_at 为空违反非空约束
             sysUser.setCreatedAt(LocalDateTime.now());
