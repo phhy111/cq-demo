@@ -46,19 +46,17 @@ jwt:
   expire-time: 7200000 # ?????2??????
   token-header: Authorization # ?????
   token-prefix: Bearer # Token??
-<<<<<<< HEAD
 
 langchin4j:
   community:
     dashscope:
       model-name: qwen-max
       api-key: sk-67ce19f833ea430789b3a6d8d8e3e085
-=======
-#阿里云oss连接
+
+# 阿里云oss连接
 aliyun:
   oss:
-    endpoint: oss-cn-chengdu.aliyuncs.com  # 你的OSS地域节点
-    accessKeyId: LTAI5tJc6t7sroYUuaAKBagq       # 替换为你的AccessKey ID
+    endpoint: oss-cn-chengdu.aliyuncs.com          # 你的OSS地域节点
+    accessKeyId: LTAI5tJc6t7sroYUuaAKBagq         # 替换为你的AccessKey ID
     accessKeySecret: Bcu4eFc5uwdonur3zWhS6zw76b1IEO # 替换为你的AccessKey Secret
-    bucketName: cq-resource            # 替换为你的Bucket名称
->>>>>>> oss1
+    bucketName: cq-resource                       # 替换为你的Bucket名称

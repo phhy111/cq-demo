@@ -40,7 +40,6 @@ public class RegisterDTO {
     @NotBlank(message = "密码不能为空")
     @Size(min = 6, max = 32, message = "密码长度需在6-32个字符之间")
     private String password;
-<<<<<<< HEAD
 
     /**
      * 性别（前端默认0：未知，1：男，2：女）
@@ -51,7 +50,7 @@ public class RegisterDTO {
      * 手机号（前端非必填，但有格式校验）
      */
     @Pattern(regexp = "^$|^1[3-9]\\d{9}$", message = "手机号格式不正确")
-    private String ext1;
+    private String phone;
 
     /**
      * 备用字段1（数字类型，前端为null）
@@ -77,7 +76,4 @@ public class RegisterDTO {
      * 头像文件（前端非必填，MultipartFile接收二进制文件）
      */
     private MultipartFile avatar;
-=======
-    private String ext1;
->>>>>>> oss1
 }
