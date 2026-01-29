@@ -173,7 +173,6 @@ public class AuthController {
                 avatarUrl = "/img/userimg/" + newFileName;
             }
 
-            // ========== 5. 修复：处理字段类型转换异常，避免NPE ==========
             Users sysUser = new Users();
             sysUser.setUsername(registerDTO.getUsername());
             sysUser.setPassword(passwordEncoder.encode(registerDTO.getPassword()));
@@ -184,7 +183,6 @@ public class AuthController {
             // 设置创建时间，避免 created_at 为空违反非空约束
             sysUser.setCreatedAt(LocalDateTime.now());
 
-            // 5.1 处理ext2（Long转int）：判空+异常捕获
             try {
                 sysUser.setExt2(registerDTO.getExt2() != null ? Math.toIntExact(registerDTO.getExt2()) : null);
             } catch (ArithmeticException e) {
@@ -194,7 +192,6 @@ public class AuthController {
 
             sysUser.setExt3(registerDTO.getExt3());
 
-            // 5.2 处理ext4（String转LocalDateTime）：异常捕获
             try {
                 sysUser.setExt4(registerDTO.getExt4() != null ? LocalDateTime.parse(registerDTO.getExt4()) : null);
             } catch (DateTimeParseException e) {
