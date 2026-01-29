@@ -8,7 +8,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("sys_user")
+@TableName("users")
 public class User {
     /**
      * 主键
@@ -29,10 +29,10 @@ public class User {
     /**
      * 昵称
      */
-    private String nickname;
+    private String ext1;
 
     /**
      * 创建时间
      */
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 }

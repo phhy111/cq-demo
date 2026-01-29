@@ -68,7 +68,7 @@ public class AuthController {
         User sysUser = new User();
         sysUser.setUsername(registerDTO.getUsername());
         sysUser.setPassword(passwordEncoder.encode(registerDTO.getPassword())); // BCrypt加密
-        sysUser.setNickname(registerDTO.getNickname() == null ? registerDTO.getUsername() : registerDTO.getNickname());
+        sysUser.setExt1(registerDTO.getExt1() == null ? registerDTO.getUsername() : registerDTO.getExt1());
         sysUserMapper.insert(sysUser);
 
         return Result.success("注册成功");

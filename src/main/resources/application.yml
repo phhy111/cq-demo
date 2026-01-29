@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/cq?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
     username: root
-    password: 241009
+    password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   security:
@@ -25,3 +25,10 @@ jwt:
   expire-time: 7200000 # ?????2??????
   token-header: Authorization # ?????
   token-prefix: Bearer # Token??
+#阿里云oss连接
+aliyun:
+  oss:
+    endpoint: oss-cn-chengdu.aliyuncs.com  # 你的OSS地域节点
+    accessKeyId: LTAI5tJc6t7sroYUuaAKBagq       # 替换为你的AccessKey ID
+    accessKeySecret: Bcu4eFc5uwdonur3zWhS6zw76b1IEO # 替换为你的AccessKey Secret
+    bucketName: cq-resource            # 替换为你的Bucket名称
