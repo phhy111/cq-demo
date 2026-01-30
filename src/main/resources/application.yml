@@ -5,6 +5,20 @@ spring:
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 1
+      timeout: 3000ms # 连接超时时间
+      lettuce:
+        pool:
+          max-active: 20 # 最大连接数
+          max-idle: 10   # 最大空闲连接
+          min-idle: 5    # 最小空闲连接
+          max-wait: 3000ms # 获取连接的最大等待时间
+
+
   security:
     user:
       name: admin
@@ -43,7 +57,7 @@ mybatis-plus:
 # JWT ?????
 jwt:
   secret: vue-spring-security-demo-1234567890abcdefghijklmn # ?????256????????
-  expire-time: 7200000 # ?????2??????
+  expire-time: 720000 # ?????2??????
   token-header: Authorization # ?????
   token-prefix: Bearer # Token??
 
