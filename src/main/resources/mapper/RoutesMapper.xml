@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="edu.cqie.cqdemo.mapper.RoutesMapper">
+    <select id="getRoutesListInfo" resultType="edu.cqie.cqdemo.entity.Routes">
+        SELECT
+            *,
+            -- 计算加权综合得分：点赞×0.5 + 收藏×0.3 + 评论×0.2，重命名为composite_score
+            (like_count * 0.5 + collect_count * 0.3 + comment_count * 0.2) AS composite_score
+        FROM
+            routes
+        ORDER BY
+            composite_score DESC
+            -- 取得分最高的前5条
+            LIMIT 5;
+    </select>
+</mapper>
