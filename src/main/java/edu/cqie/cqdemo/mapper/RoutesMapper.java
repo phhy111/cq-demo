@@ -1,0 +1,23 @@
+package edu.cqie.cqdemo.mapper;
+
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import edu.cqie.cqdemo.entity.Routes;
+import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
+
+/**
+* @author
+* @description 针对表【routes(路线表)】的数据库操作Mapper
+* @createDate 2026-01-31 11:47:59
+* @Entity cq-demo.Routes
+*/
+@Mapper
+public interface RoutesMapper extends BaseMapper<Routes> {
+    public List<Routes> getRoutesListInfo();
+}
+
+
+
+

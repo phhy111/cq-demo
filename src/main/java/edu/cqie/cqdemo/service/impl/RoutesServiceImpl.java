@@ -1,0 +1,36 @@
+package edu.cqie.cqdemo.service.impl;
+
+
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import edu.cqie.cqdemo.entity.Routes;
+import edu.cqie.cqdemo.mapper.RoutesMapper;
+import edu.cqie.cqdemo.service.RoutesService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+/**
+* @author
+* @description 针对表【routes(路线表)】的数据库操作Service实现
+* @createDate 2026-01-31 11:47:59
+*/
+@Service
+public class RoutesServiceImpl extends ServiceImpl<RoutesMapper, Routes> implements RoutesService {
+
+    @Autowired
+    private RoutesMapper routesMapper;
+
+    /**
+     * 查询路线榜单前5
+     * @return
+     */
+    @Override
+    public List<Routes> getRoutesListInfo() {
+        return routesMapper.getRoutesListInfo();
+    }
+}
+
+
+
+
