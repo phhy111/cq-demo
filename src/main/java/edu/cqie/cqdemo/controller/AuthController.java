@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import edu.cqie.cqdemo.common.Result;
 import edu.cqie.cqdemo.dto.LoginDTO;
 import edu.cqie.cqdemo.dto.RegisterDTO;
+import edu.cqie.cqdemo.entity.User;
 import edu.cqie.cqdemo.entity.Users;
 import edu.cqie.cqdemo.mapper.UserMapper;
 import edu.cqie.cqdemo.service.impl.UserDetailsServiceImpl;
@@ -109,6 +110,13 @@ public class AuthController {
 
         return Result.success("验证码已发送，请在10分钟内完成注册");
     }
+        // 2. 密码加密，保存用户
+        Users sysUser = new User();
+        sysUser.setUsername(registerDTO.getUsername());
+        sysUser.setPassword(passwordEncoder.encode(registerDTO.getPassword())); // BCrypt加密
+        sysUser.setExt1(registerDTO.getExt1() == null ? registerDTO.getUsername() : registerDTO.getExt1());
+        sysUserMapper.insert(sysUser);
+
 
     /**
      * 注册接口（核心优化）

@@ -46,7 +46,6 @@ public class OSSOperationUtil {
         // 遍历文件，筛选图片并拼接完整URL
         for (OSSObjectSummary objectSummary : objectListing.getObjectSummaries()) {
             String objectName = objectSummary.getKey();
-            // 筛选常见图片格式
             if (isImageFile(objectName)) {
                 //阿里云OSS默认访问地址
                 String imageUrl = "https://" + bucketName + "." + endpoint + "/" + objectName;
