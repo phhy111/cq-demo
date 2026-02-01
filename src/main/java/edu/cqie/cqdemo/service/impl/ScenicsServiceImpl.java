@@ -22,4 +22,9 @@ public class ScenicsServiceImpl extends ServiceImpl<ScenicsMapper, Scenics> impl
     public List<Scenics> getSlideShowInfo() {
         return scenicsMapper.getSlideShowInfo();
     }
+
+    @Override
+    public List<Scenics> getScenicsInfoByRegionId(Integer regionId) {
+        return scenicsMapper.getScenicsInfoByRegionId(regionId);
+    }
 }

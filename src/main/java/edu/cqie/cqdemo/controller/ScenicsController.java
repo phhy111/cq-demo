@@ -19,6 +19,10 @@ public class ScenicsController {
      */
     @Autowired
     private ScenicsService scenicsService;
+    /**
+     * 获取所有景点信息
+     * @return
+     */
     @GetMapping("/GetScenicsInfo")
     public Result<List<Scenics>> getScenicsInfo() {
        List<Scenics> scenicsList = scenicsService.list();
@@ -31,6 +35,16 @@ public class ScenicsController {
     @GetMapping("/GetSlideShowInfo")
     public Result<List<Scenics>> getSlideShowInfo() {
         List<Scenics> scenicsList = scenicsService.getSlideShowInfo();
+        return Result.success(scenicsList);
+    }
+
+    /**
+     * 获取对应区域的景点信息
+     * @return
+     */
+    @GetMapping("/GetScenicsInfoByRegionId")
+    public Result<List<Scenics>> getScenicsInfoByRegionId(Integer regionId) {
+        List<Scenics> scenicsList = scenicsService.getScenicsInfoByRegionId(regionId);
         return Result.success(scenicsList);
     }
 

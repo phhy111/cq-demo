@@ -15,5 +15,15 @@ import java.util.List;
  */
 @Mapper
 public interface ScenicsMapper extends BaseMapper<Scenics> {
+    /**
+     * 获取主页轮播图信息
+     * @return
+     */
     public List<Scenics> getSlideShowInfo();
+
+    /**
+     * 获取对应区域的景点信息
+     * @return
+     */
+    public List<Scenics> getScenicsInfoByRegionId(Integer regionId);
 }
