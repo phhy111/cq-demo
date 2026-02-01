@@ -36,7 +36,6 @@ public class HomeController {
     @GetMapping("/getOssScenicsImg")
     public Result<Object> getOssScenicsImg() {
         try {
-            System.out.println(ossOperationUtil.getSlideShowImageUrls());
             return Result.success(ossOperationUtil.getSlideShowImageUrls());
         } catch (Exception e) {
             return Result.error("获取OSS图片失败: " + e.getMessage());
