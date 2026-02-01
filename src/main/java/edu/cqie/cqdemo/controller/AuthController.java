@@ -109,6 +109,13 @@ public class AuthController {
 
         return Result.success("验证码已发送，请在10分钟内完成注册");
     }
+        // 2. 密码加密，保存用户
+        Users sysUser = new Users();
+        sysUser.setUsername(registerDTO.getUsername());
+        sysUser.setPassword(passwordEncoder.encode(registerDTO.getPassword())); // BCrypt加密
+        sysUser.setExt1(registerDTO.getExt1() == null ? registerDTO.getUsername() : registerDTO.getExt1());
+        sysUserMapper.insert(sysUser);
+
 
     /**
      * 注册接口（核心优化）
