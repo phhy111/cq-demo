@@ -13,4 +13,9 @@ import java.util.List;
  */
 public interface ScenicsService extends IService<Scenics> {
     public List<Scenics> getSlideShowInfo();
+    /**
+     * 获取对应区域的景点信息
+     * @return
+     */
+    public List<Scenics> getScenicsInfoByRegionId(Integer regionId);
 }

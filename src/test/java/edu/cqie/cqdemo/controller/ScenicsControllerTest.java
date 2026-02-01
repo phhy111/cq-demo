@@ -19,4 +19,9 @@ class ScenicsControllerTest {
     void getSlideShowInfo() {
         scenicsController.getSlideShowInfo();
     }
+
+    @Test
+    void getScenicsInfoByRegionId() {
+        scenicsController.getScenicsInfoByRegionId(1);
+    }
 }

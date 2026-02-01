@@ -7,4 +7,10 @@
         ORDER BY `created_at` DESC
             LIMIT 5;
     </select>
+    <select id="getScenicsInfoByRegionId" resultType="edu.cqie.cqdemo.entity.Scenics">
+        SELECT *
+        FROM `scenics`
+        WHERE `region_id` = #{regionId}
+        ORDER BY `created_at` DESC;
+    </select>
 </mapper>
