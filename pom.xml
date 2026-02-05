@@ -49,7 +49,6 @@
             <artifactId>langchain4j-community-dashscope-spring-boot-starter</artifactId>
             <version>1.1.0-beta7</version>
         </dependency>
-
         <!-- Spring Security -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

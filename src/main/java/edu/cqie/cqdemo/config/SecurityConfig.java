@@ -76,7 +76,7 @@ public class SecurityConfig {
                 // 授权规则
                 .authorizeHttpRequests(auth -> auth
                         // 放行登录、注册、发送验证码接口
-                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/sendCode").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/sendCode","api/ai/chat").permitAll()
                         // 其他接口需要认证
                         .anyRequest().authenticated()
                 )

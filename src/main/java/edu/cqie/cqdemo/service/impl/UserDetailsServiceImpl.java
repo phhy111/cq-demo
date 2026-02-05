@@ -27,6 +27,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     // 移除@Autowired，由@RequiredArgsConstructor自动生成构造器注入
     private final UserMapper userMapper;
 
+
     /**
      * 根据用户名加载用户信息（适配用户名不唯一场景）
      * @param username 前端传入的登录用户名
