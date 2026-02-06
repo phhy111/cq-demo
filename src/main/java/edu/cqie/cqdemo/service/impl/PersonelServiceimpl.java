@@ -11,7 +11,12 @@ public class PersonelServiceimpl implements PersonerlService {
     @Autowired
     private PersonerlMapper personerlMapper;
     @Override
-    public Users getUser() {
-        return personerlMapper.selectuser();
+    public Users getUser(Long id) {
+        return personerlMapper.selectuser(id);
+    }
+
+    @Override
+    public Users getUserByUsername(String username) {
+        return personerlMapper.selectUserByUsername(username);
     }
 }

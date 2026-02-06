@@ -14,8 +14,7 @@ class CqDemoApplicationTests {
 
     @Test
     void contextLoads() {
-        Users users=personerlService.getUser();
-        System.out.println(users);
+
     }
 
 }
