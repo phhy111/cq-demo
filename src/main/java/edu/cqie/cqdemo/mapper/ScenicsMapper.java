@@ -2,6 +2,7 @@ package edu.cqie.cqdemo.mapper;
 
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import edu.cqie.cqdemo.dto.ScenicsDTO;
 import edu.cqie.cqdemo.entity.Scenics;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -26,4 +27,31 @@ public interface ScenicsMapper extends BaseMapper<Scenics> {
      * @return
      */
     public List<Scenics> getScenicsInfoByRegionId(Integer regionId);
+
+    /**
+     * 获取不同等级的景点信息
+     * @return
+     */
+    public List<Scenics> getScenicsInfoByLevel(String level);
+    /**
+     * 按评分高低获取景点信息
+     * @return
+     */
+    public List<Scenics> getScenicsInfoByScore();
+    /**
+     * 按点赞量排序
+     * @return
+     */
+    public List<Scenics> getScenicsInfoByLikeCount();
+    /**
+     * 增加浏览量
+     * @return
+     */
+    public boolean addViewCount(Integer id);
+    /**
+     * 获取景点详情
+     * @return
+     */
+    public List<ScenicsDTO> getScenicsDetailInfoById(Integer id);
+
 }

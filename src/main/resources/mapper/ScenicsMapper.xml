@@ -13,4 +13,38 @@
         WHERE `region_id` = #{regionId}
         ORDER BY `created_at` DESC;
     </select>
+    <select id="getScenicsInfoByLevel" resultType="edu.cqie.cqdemo.entity.Scenics">
+        SELECT *
+        FROM `scenics`
+        WHERE `level` = #{level}
+        ORDER BY `created_at` DESC;
+    </select>
+    <select id="getScenicsInfoByScore" resultType="edu.cqie.cqdemo.entity.Scenics">
+        SELECT *
+        FROM `scenics`
+        ORDER BY `score` DESC;
+    </select>
+    <select id="getScenicsInfoByLikeCount" resultType="edu.cqie.cqdemo.entity.Scenics">
+        SELECT *
+        FROM `scenics`
+        ORDER BY `like_count` DESC;
+    </select>
+    <select id="getScenicsDetailInfoById" resultType="edu.cqie.cqdemo.dto.ScenicsDTO">
+        SELECT
+            s.*,
+            si.image_url
+        FROM
+            scenics s
+                LEFT JOIN
+            scenic_images si ON s.id = si.scenic_id
+        WHERE
+            s.id = #{id}
+        ORDER BY
+            si.id ASC;
+    </select>
+    <update id="addViewCount">
+        UPDATE `scenics`
+        SET `view_count` = `view_count` + 1
+        WHERE `id` = #{id};
+    </update>
 </mapper>

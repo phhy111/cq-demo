@@ -22,6 +22,10 @@ public class RoutesController {
     @RequestMapping("/GetRoutesListInfo")
     public Result<List<Routes>> getRoutesListInfo() {
         List<Routes> routesList = routesService.getRoutesListInfo();
-        return Result.success(routesList);
+        if (routesList != null){
+            return Result.success(routesList);
+        }else {
+            return Result.error("查询失败");
+        }
     }
 }

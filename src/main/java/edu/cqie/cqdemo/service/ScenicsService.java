@@ -2,6 +2,7 @@ package edu.cqie.cqdemo.service;
 
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import edu.cqie.cqdemo.dto.ScenicsDTO;
 import edu.cqie.cqdemo.entity.Scenics;
 
 import java.util.List;
@@ -18,4 +19,30 @@ public interface ScenicsService extends IService<Scenics> {
      * @return
      */
     public List<Scenics> getScenicsInfoByRegionId(Integer regionId);
+
+    /**
+     * 获取不同等级的景点信息
+     * @return
+     */
+    public List<Scenics> getScenicsInfoByLevel(String level);
+    /**
+     * 按评分高低获取景点信息
+     * @return
+     */
+    public List<Scenics> getScenicsInfoByScore();
+    /**
+     * 按点赞量排序
+     * @return
+     */
+    public List<Scenics> getScenicsInfoByLikeCount();
+    /**
+     * 添加景点浏览量
+     * @param id
+     */
+    public boolean addViewCount(Integer id);
+    /**
+     * 获取景点详细信息
+     * @param id
+     */
+    public List<ScenicsDTO> getScenicsDetailInfoById(Integer id);
 }

@@ -19,6 +19,10 @@ public class RegionsController {
 
     @GetMapping("/getRegionsIdAndName")
     public Result<Object> getRegionsIdAndName() {
-        return Result.success(regionsService.getRegionsIdAndName());
+        if (regionsService.getRegionsIdAndName() != null){
+            return Result.success(regionsService.getRegionsIdAndName());
+        }else {
+            return Result.error("获取区域id与区域名称失败");
+        }
     }
 }
