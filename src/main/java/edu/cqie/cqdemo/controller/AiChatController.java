@@ -1,5 +1,7 @@
 package edu.cqie.cqdemo.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.cqie.cqdemo.dto.AiDTO;
 import edu.cqie.cqdemo.entity.LoginUser;
 import edu.cqie.cqdemo.service.AiService;
@@ -7,20 +9,23 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.http.HttpStatus;
 
 import jakarta.annotation.Resource;
+import reactor.core.publisher.Flux;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
  * AI聊天/旅行计划Controller
- * 已修改：适配【首次全量传参】+【后续仅传userInput】双模式
- * 核心：Redis缓存用户核心旅行数据，基于用户ID判定模式，会话记忆绑定用户
+ * 最终修复版：
+ * 1. SSE的data字段强制序列化为纯JSON字符串（核心解决解析报错）
+ * 2. 统一返回Flux<ServerSentEvent<String>>，前端可直接解析
+ * 3. 双模式逻辑闭环，错误响应标准化
  */
 @RestController
 @RequestMapping("/api/ai")
@@ -31,65 +36,66 @@ public class AiChatController {
     @Resource
     private AiService aiService;
 
-    // 新增：注入RedisTemplate（用于会话缓存，已配置JSON序列化）
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
-    // 常量：Redis缓存key前缀 + 会话过期时间（30分钟，可根据需求调整）
+    // 常量：Redis缓存key前缀 + 会话过期时间（30分钟）
     private static final String AI_SESSION_KEY_PREFIX = "ai:travel:session:";
     private static final long AI_SESSION_EXPIRE = 30L;
     private static final TimeUnit AI_SESSION_TIME_UNIT = TimeUnit.MINUTES;
+    // JSON序列化工具（全局复用）
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
      * 核心POST接口【需登录认证（带JWT Token）】
-     * 已修改：双模式适配
-     * 模式1：首次请求（Redis无缓存）→ 校验全量核心字段 → 拼接全量消息 → 缓存核心数据 → 调用AI
-     * 模式2：后续请求（Redis有缓存）→ 仅校验message → 读取缓存核心数据 → 拼接「历史+新要求」→ 调用AI
+     * 关键修改：返回值改为Flux<ServerSentEvent<String>>，确保data是纯JSON字符串
      */
     @PostMapping(
             value = "/chat",
             consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE
+            produces = MediaType.TEXT_EVENT_STREAM_VALUE // SSE标准媒体类型
     )
-    public ResponseEntity<Map<String, Object>> chat(@RequestBody(required = true) AiDTO aiDTO) {
+    public Flux<ServerSentEvent<String>> chat(@RequestBody(required = true) AiDTO aiDTO) {
+        // 外层try-catch包裹，统一处理所有异常并返回流式错误
         try {
             // 1. 基础校验：请求体非空
             if (aiDTO == null) {
                 log.error("AI接口调用失败：请求体不能为空");
-                return buildErrorResponse(400, "请求参数不能为空");
+                return buildErrorSseResponse(400, "请求参数不能为空");
             }
 
-            // 2. 优先获取登录用户ID（核心：会话绑定用户，原有逻辑提取到此处，方便后续使用）
+            // 2. 获取登录用户ID（核心：会话绑定用户）
             LoginUser loginUser = this.getLoginUser();
             Long userId = loginUser.getId();
             String username = loginUser.getUsername();
-            String redisKey = AI_SESSION_KEY_PREFIX + userId; // 每个用户的唯一缓存key
+            String redisKey = AI_SESSION_KEY_PREFIX + userId;
             log.info("AI接口调用：用户ID={}，用户名={}，缓存Key={}", userId, username, redisKey);
 
-            // 3. 从Redis读取用户历史核心数据，判定双模式
+            // 3. 声明userMessage为方法级变量，解决作用域问题
+            String userMessage;
+            // 从Redis读取历史数据，判定双模式
             AiDTO historyAiDTO = (AiDTO) redisTemplate.opsForValue().get(redisKey);
-            String userMessage; // 最终传给AI服务的拼接消息
 
             if (historyAiDTO == null) {
                 // ===================== 模式1：首次全量请求（无缓存）=====================
                 log.info("用户{}为首次请求，进入全量校验模式", userId);
-                // 强制校验核心必填字段（原有逻辑保留，无修改）
+                // 强制校验核心必填字段
                 if (aiDTO.getPeopleNum() == null || aiDTO.getPeopleNum().isBlank()) {
                     log.error("AI接口调用失败：用户{}出行人数不能为空", userId);
-                    return buildErrorResponse(400, "出行人数不能为空");
+                    return buildErrorSseResponse(400, "出行人数不能为空");
                 }
                 if (aiDTO.getPlanDays() == null || aiDTO.getPlanDays().isBlank()) {
                     log.error("AI接口调用失败：用户{}旅游天数不能为空", userId);
-                    return buildErrorResponse(400, "旅游天数不能为空");
+                    return buildErrorSseResponse(400, "旅游天数不能为空");
                 }
                 if (aiDTO.getTravelType() == null || aiDTO.getTravelType().isBlank()) {
                     log.error("AI接口调用失败：用户{}出行类型不能为空", userId);
-                    return buildErrorResponse(400, "出行类型不能为空");
+                    return buildErrorSseResponse(400, "出行类型不能为空");
                 }
 
-                // 调用原有拼接方法，生成全量消息（原有逻辑保留，无修改）
+                // 拼接全量消息
                 userMessage = aiDTO.userMessages();
-                // 缓存用户核心数据到Redis（设置过期时间，实现会话过期）
+                // 缓存核心数据到Redis（设置过期时间）
                 redisTemplate.opsForValue().set(redisKey, aiDTO, AI_SESSION_EXPIRE, AI_SESSION_TIME_UNIT);
                 log.info("用户{}核心数据已缓存到Redis，过期时间{}分钟", userId, AI_SESSION_EXPIRE);
 
@@ -99,66 +105,105 @@ public class AiChatController {
                 // 仅校验前端传的message（userInput）非空
                 if (aiDTO.getMessage() == null || aiDTO.getMessage().isBlank()) {
                     log.error("AI接口调用失败：用户{}未传入优化要求（message）", userId);
-                    return buildErrorResponse(400, "请输入你的旅行优化/新增要求");
+                    return buildErrorSseResponse(400, "请输入你的旅行优化/新增要求");
                 }
 
-                // 调用新增重载方法，拼接「历史核心数据+新message」消息
+                // 拼接「历史核心数据+新message」消息
                 userMessage = aiDTO.userMessages(historyAiDTO, aiDTO.getMessage());
-                // 刷新Redis缓存过期时间（用户持续操作，会话不过期）
+                // 刷新Redis缓存过期时间
                 redisTemplate.expire(redisKey, AI_SESSION_EXPIRE, AI_SESSION_TIME_UNIT);
                 log.info("用户{}Redis缓存过期时间已刷新，新要求={}", userId, aiDTO.getMessage());
             }
 
-            // 4. 核心业务：调用Service层（原有逻辑保留，仅传入拼接后的message）
+            // 4. 核心业务：调用流式AI服务（统一模式1/2为流式响应）
             log.info("AI旅行计划消息拼接完成：{}", userMessage);
-            String aiReply = aiService.chat(String.valueOf(userId), userMessage);
+            // 调用chatStream获取流式响应，并封装为带元数据的SSE
+            return aiService.chatStream(userId, userMessage)
+                    .map(chunk -> {
+                        // 封装单条流式数据（AI实时返回的内容）
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("userId", userId);
+                        data.put("username", username);
+                        data.put("spliceMessage", userMessage);
+                        data.put("originalParam", aiDTO);
 
-            // 5. 封装标准成功响应（原有格式完全保留，前端无需任何修改）
-            Map<String, Object> data = new HashMap<>();
-            data.put("userId", userId);
-            data.put("username", username);
-            data.put("spliceMessage", userMessage);
-            data.put("originalParam", aiDTO);
-            data.put("aiReply", aiReply);
+                        // ===================== 核心修复 START =====================
+                        // 问题：AI返回的chunk是非JSON文本（如id:1770373, content:xxx）
+                        // 修复：将非JSON文本解析为标准JSON对象，避免前端解析报错
+                        Map<String, String> aiReplyMap = new HashMap<>();
+                        if (chunk != null && !chunk.isBlank()) {
+                            // 分割AI原始响应（兼容"id:xxx, content:xxx"格式）
+                            String[] parts = chunk.split(",");
+                            for (String part : parts) {
+                                String[] keyValue = part.split(":", 2); // 只分割第一个冒号，避免内容含冒号
+                                if (keyValue.length == 2) {
+                                    String key = keyValue[0].trim();
+                                    String value = keyValue[1].trim();
+                                    aiReplyMap.put(key, value);
+                                }
+                            }
+                            // 兜底：如果未解析出内容，直接存入原始文本到content字段
+                            if (aiReplyMap.isEmpty()) {
+                                aiReplyMap.put("content", chunk);
+                            }
+                        } else {
+                            aiReplyMap.put("content", ""); // 空内容兜底
+                        }
+                        data.put("aiReplyChunk", aiReplyMap); // 现在是标准JSON对象
+                        // ===================== 核心修复 END =====================
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("code", 200);
-            response.put("msg", historyAiDTO == null ? "旅行计划生成成功" : "旅行计划优化成功");
-            response.put("data", data);
+                        data.put("code", 200);
+                        data.put("msg", historyAiDTO == null ? "旅行计划生成成功" : "旅行计划优化成功");
 
-            return ResponseEntity.ok(response);
+                        // 关键修改：手动序列化为JSON字符串，确保data是纯JSON
+                        String jsonData;
+                        try {
+                            jsonData = OBJECT_MAPPER.writeValueAsString(data);
+                        } catch (JsonProcessingException e) {
+                            log.error("JSON序列化失败", e);
+                            jsonData = "{\"code\":500,\"msg\":\"数据序列化失败\",\"data\":null}";
+                        }
+
+                        // 构建标准SSE响应（data为纯JSON字符串）
+                        return ServerSentEvent.<String>builder()
+                                .id(String.valueOf(System.currentTimeMillis())) // SSE唯一ID
+                                .event("ai-chat") // SSE事件类型（前端可监听）
+                                .data(jsonData)
+                                .build();
+                    })
+                    .onErrorResume(e -> {
+                        // 流式响应过程中异常处理
+                        log.error("AI流式响应异常：", e);
+                        return buildErrorSseResponse(500, "AI响应异常：" + e.getMessage());
+                    });
 
         } catch (IllegalAccessException e) {
-            // 未登录/认证失败（原有逻辑保留，无修改）
+            // 未登录/认证失败异常处理
             log.error("AI接口调用失败：{}", e.getMessage());
-            return buildErrorResponse(401, e.getMessage());
+            return buildErrorSseResponse(401, e.getMessage());
         } catch (Exception e) {
-            // 业务异常/未知异常（原有逻辑保留，无修改）
+            // 通用业务异常处理
             log.error("AI接口调用异常：", e);
-            return buildErrorResponse(500, "AI旅行计划处理失败：" + e.getMessage());
+            return buildErrorSseResponse(500, "AI旅行计划处理失败：" + e.getMessage());
         }
     }
 
     /**
-     * 工具方法：安全获取登录用户信息（原有逻辑，无任何修改）
+     * 工具方法：安全获取登录用户信息（原有逻辑，无修改）
      */
     private LoginUser getLoginUser() throws IllegalAccessException {
-        // 1. 第一步：获取认证对象Authentication，单独判空
         org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null) {
             throw new IllegalAccessException("未获取到用户认证信息，请先登录");
         }
 
-        // 2. 第二步：获取用户主体Principal（过滤器存入的LoginUser对象），单独判空
         Object principal = auth.getPrincipal();
         if (principal == null) {
             throw new IllegalAccessException("用户认证主体信息为空，无法获取用户ID");
         }
 
-        // 3. 关键：打印Principal实际类型（排查用，后续可保留/删除）
         log.info("获取到的认证主体Principal类型：{}，实际值：{}", principal.getClass().getName(), principal);
 
-        // 4. 精准判断是否为自定义LoginUser类型，非则抛异常并提示实际类型
         if (!(principal instanceof LoginUser)) {
             throw new IllegalAccessException(
                     "用户认证信息异常，无法获取用户ID！当前Principal类型为：" + principal.getClass().getName()
@@ -166,27 +211,35 @@ public class AiChatController {
             );
         }
 
-        // 5. 类型转换并返回
         return (LoginUser) principal;
     }
 
     /**
-     * 统一错误响应封装（原有逻辑，无任何修改）
+     * 修正版：构建流式SSE错误响应（返回String类型，data为纯JSON字符串）
      */
-    private ResponseEntity<Map<String, Object>> buildErrorResponse(int code, String msg) {
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("code", code);
-        errorResponse.put("msg", msg);
-        errorResponse.put("data", null);
+    private Flux<ServerSentEvent<String>> buildErrorSseResponse(int code, String msg) {
+        Map<String, Object> errorData = new HashMap<>();
+        errorData.put("code", code);
+        errorData.put("msg", msg);
+        errorData.put("data", null);
 
-        HttpStatus httpStatus;
-        if (code == 400) {
-            httpStatus = HttpStatus.BAD_REQUEST;
-        } else if (code == 401) {
-            httpStatus = HttpStatus.UNAUTHORIZED;
-        } else {
-            httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+        // 手动序列化为JSON字符串
+        String jsonData;
+        try {
+            jsonData = OBJECT_MAPPER.writeValueAsString(errorData);
+        } catch (JsonProcessingException e) {
+            log.error("错误响应序列化失败", e);
+            jsonData = "{\"code\":500,\"msg\":\"错误序列化失败\",\"data\":null}";
         }
-        return ResponseEntity.status(httpStatus).body(errorResponse);
+
+        // 构建标准SSE错误响应
+        ServerSentEvent<String> errorEvent = ServerSentEvent.<String>builder()
+                .id(String.valueOf(System.currentTimeMillis()))
+                .event("ai-error") // 错误事件类型（前端可区分）
+                .data(jsonData)
+                .build();
+
+        // 返回包含单个错误事件的Flux
+        return Flux.just(errorEvent);
     }
 }

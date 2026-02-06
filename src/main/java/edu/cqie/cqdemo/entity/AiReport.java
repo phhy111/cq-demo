@@ -6,11 +6,10 @@ import java.util.Date;
 
 @Data
 public class AiReport {
-    String name;
-    String guidesTitle;
+    String name;//路线名字
+    String strategyTitle;//攻略标题
     String route_intro;//路线简介
     String highlights;//亮点
-    Date playDate;//游玩时间
     String content;//具体内容
 
 }
