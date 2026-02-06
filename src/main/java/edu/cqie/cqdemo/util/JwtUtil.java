@@ -1,5 +1,6 @@
 package edu.cqie.cqdemo.util;
 
+import edu.cqie.cqdemo.entity.LoginUser; // 必须引入自定义的LoginUser
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -11,16 +12,13 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.util.Date;
 
-/**
- * 完善后的JWT工具类（包含过滤器所需的所有方法）
- */
 @Component
 public class JwtUtil {
-    // JWT密钥（≥256位，建议配置在yml中）
-    @Value("${jwt.secret:your-secret-key-1234567890abcdef1234567890abcdef}")
+    // JWT密钥（≥256位，建议配置在yml中，不要用默认值）
+    @Value("${jwt.secret:your-secret-key-1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef}")
     private String secret;
 
-    // Token过期时间（2小时，单位：毫秒）
+    // Token过期时间（2小时，单位：毫秒），和Redis保持一致
     @Value("${jwt.expire:7200000}")
     private long expireTime;
 
@@ -44,15 +42,19 @@ public class JwtUtil {
     }
 
     /**
-     * 验证Token有效性（适配过滤器的重载方法）
-     * @param token JWT Token
-     * @param userDetails 用户信息
-     * @return true=有效，false=无效
+     * 【新增】从Token中获取用户ID（核心方法，业务层可直接调用）
+     * 注意：根据你的Users实体类的id类型调整（Long/Integer/String）
+     */
+    public Long getUserIdFromToken(String token) {
+        return parseToken(token).get("id", Long.class);
+    }
+
+    /**
+     * 验证Token有效性（用户名匹配 + 未过期）
      */
     public boolean validateToken(String token, UserDetails userDetails) {
         try {
             String username = getUsernameFromToken(token);
-            // 验证用户名匹配 + Token未过期
             return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
         } catch (Exception e) {
             return false;
@@ -60,7 +62,7 @@ public class JwtUtil {
     }
 
     /**
-     * 验证Token是否过期（内部方法）
+     * 验证Token是否过期
      */
     private boolean isTokenExpired(String token) {
         Date expiration = parseToken(token).getExpiration();
@@ -80,20 +82,28 @@ public class JwtUtil {
     }
 
     /**
-     * 生成Token（登录接口用）
+     * 【核心修复】适配自定义LoginUser，生成含【用户ID+用户名】的Token
+     * 入参：UserDetails（实际是LoginUser），内部强转获取ID和用户名
+     * 调用：登录接口直接传userDetails即可，无需额外参数
      */
     public String generateToken(UserDetails userDetails) {
+        LoginUser loginUser = (LoginUser) userDetails;
+        String username = loginUser.getUsername();
+        Long userId = loginUser.getId();
+
+        // 生成JWT Token，写入用户名和ID
         SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
         return Jwts.builder()
-                .setSubject(userDetails.getUsername()) // 用户名
-                .setIssuedAt(new Date()) // 签发时间
+                .setSubject(username)        // 标准Claim：存用户名（方便后续验证）
+                .claim("id", userId)         // 自定义Claim：存用户ID（核心）
+                .setIssuedAt(new Date())     // 签发时间
                 .setExpiration(new Date(System.currentTimeMillis() + expireTime)) // 过期时间
-                .signWith(key) // 签名
+                .signWith(key)               // 密钥签名
                 .compact();
     }
 
     /**
-     * 简化版Token验证（仅校验是否过期/签名正确）
+     * 简化版Token验证（仅校验签名+是否过期）
      */
     public boolean validateToken(String token) {
         try {

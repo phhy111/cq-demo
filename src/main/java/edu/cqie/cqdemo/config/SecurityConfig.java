@@ -22,13 +22,14 @@ import java.util.Arrays;
 
 /**
  * Spring Security配置
+ * 最终修正：1.补全路径斜杠 2.显式绑定自定义UserDetailsServiceImpl，覆盖框架默认实现（核心解决类型不匹配）
  */
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final UserDetailsServiceImpl userDetailsService;
+    private final UserDetailsServiceImpl userDetailsService; // 你自定义的用户详情服务
 
     /**
      * 密码加密器
@@ -47,40 +48,38 @@ public class SecurityConfig {
     }
 
     /**
-     * 跨域配置
+     * 跨域配置（正确，无需修改）
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("*")); // 允许所有域名（生产环境需指定）
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(true); // 允许携带Cookie
+        configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 
     /**
-     * 安全过滤链
+     * 安全过滤链（核心修正：新增.userDetailsService(userDetailsService)）
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 关闭CSRF（前后端分离不需要）
                 .csrf(csrf -> csrf.disable())
-                // 跨域配置
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // 无状态会话（不使用Session）
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // 授权规则
+                // ########### 核心新增行 ###########
+                // 显式指定使用自定义的用户详情服务，覆盖框架默认实现，全程使用LoginUser
+                .userDetailsService(userDetailsService)
+                // #################################
                 .authorizeHttpRequests(auth -> auth
-                        // 放行登录、注册、发送验证码接口
-                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/sendCode").permitAll()
-                        // 其他接口需要认证
+                        // 放行接口（已补全斜杠，正确）
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/sendCode","/api/ai/chat").permitAll()
                         .anyRequest().authenticated()
                 )
-                // 添加JWT过滤器（在用户名密码过滤器之前）
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
