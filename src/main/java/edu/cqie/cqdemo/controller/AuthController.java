@@ -5,11 +5,13 @@ import edu.cqie.cqdemo.common.Result;
 import edu.cqie.cqdemo.dto.LoginDTO;
 import edu.cqie.cqdemo.dto.RegisterDTO;
 import edu.cqie.cqdemo.entity.Users;
+import edu.cqie.cqdemo.mapper.PersonerlMapper;
 import edu.cqie.cqdemo.mapper.UserMapper;
 import edu.cqie.cqdemo.service.impl.UserDetailsServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -55,11 +57,12 @@ public class AuthController {
     private final StringRedisTemplate stringRedisTemplate;
     private final JavaMailSender mailSender;
 
+
     /**
      * 登录接口（保持不变，登录仍用JSON接收）
      */
     @PostMapping("/login")
-    public Result<String> login(@Valid @RequestBody LoginDTO loginDTO) {
+    public Result<java.util.Map<String, Object>> login(@Valid @RequestBody LoginDTO loginDTO) {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginDTO.getUsername(), loginDTO.getPassword())
@@ -71,7 +74,18 @@ public class AuthController {
             String loginKey = "login_token:" + userDetails.getUsername();
             stringRedisTemplate.opsForValue().set(loginKey, token, 2, TimeUnit.HOURS);
 
-            return Result.success(token);
+            // 根据用户名查询用户信息
+            Users user = sysUserMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Users>()
+                    .eq(Users::getUsername, loginDTO.getUsername()));
+            System.out.println("当前登录信息"+user);
+
+            // 构建返回结果
+            java.util.Map<String, Object> resultMap = new java.util.HashMap<>();
+            resultMap.put("token", token);
+            resultMap.put("user", user);
+
+
+            return Result.success(resultMap);
         } catch (Exception e) {
             log.error("登录失败：", e);
             return Result.error("用户名或密码错误");
