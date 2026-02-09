@@ -2,16 +2,23 @@ package edu.cqie.cqdemo.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.cqie.cqdemo.common.Result;
 import edu.cqie.cqdemo.dto.AiDTO;
 import edu.cqie.cqdemo.entity.AiReport;
+import edu.cqie.cqdemo.entity.Guides;
 import edu.cqie.cqdemo.entity.LoginUser;
+import edu.cqie.cqdemo.entity.Routes;
+import edu.cqie.cqdemo.mapper.RoutesMapper;
 import edu.cqie.cqdemo.service.AiService;
+import edu.cqie.cqdemo.service.GuidesService;
+import edu.cqie.cqdemo.service.RoutesService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
@@ -37,6 +44,10 @@ public class AiChatController {
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+    @Resource
+    private RoutesService routesService;
+    @Resource
+    private GuidesService guidesService;
 
     private static final String AI_SESSION_KEY_PREFIX = "ai:travel:session:";
     private static final long AI_SESSION_EXPIRE = 30L;
@@ -45,6 +56,7 @@ public class AiChatController {
     private static final long AI_CONVERSATION_EXPIRE = 24L;
     private static final TimeUnit AI_CONVERSATION_TIME_UNIT = TimeUnit.HOURS;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
 
     @PostMapping(
             value = "/history",
@@ -159,6 +171,51 @@ public class AiChatController {
         }
     }
 
+    @PostMapping("/addChatMessage")
+    @Transactional
+    public Result<String> addChatMessage(@RequestBody Map<String, Object> request) {
+        try {
+            LoginUser loginUser = this.getLoginUser();
+            Long userId = loginUser.getId();
+            
+            // 从请求体中获取AiDTO和AiReport
+            Map<String, Object> aiDTOMap = (Map<String, Object>) request.get("aiDTO");
+            Map<String, Object> aiReportMap = (Map<String, Object>) request.get("aiReport");
+            
+            if (aiDTOMap == null || aiReportMap == null) {
+                return Result.error("请求参数不能为空");
+            }
+            
+            // 创建Routes对象
+            Routes routes = new Routes();
+            routes.setUserId(userId);
+            routes.setTitle((String) aiReportMap.get("name"));
+            routes.setDescription((String) aiReportMap.get("highlights"));
+            // 保存到数据库
+            routesService.save(routes);
+            // 创建Guides对象
+            Guides guides = new Guides();
+            guides.setUserId(userId);
+            guides.setTitle((String) aiReportMap.get("strategyTitle"));
+            guides.setSummary((String) aiReportMap.get("routeIntro"));
+            guides.setContent((String) aiReportMap.get("content"));
+            guides.setCategory((String) aiDTOMap.get("travelType"));
+            guides.setRoutesId(routes.getId());
+
+            guidesService.save(guides);
+            
+            log.info("用户 {} 保存了对话消息，Routes ID: {}, Guides ID: {}", userId, routes.getId(), guides.getId());
+            
+            return Result.success("保存成功");
+        } catch (IllegalAccessException e) {
+            log.error("认证失败", e);
+            return Result.error("用户未登录或令牌无效");
+        } catch (Exception e) {
+            log.error("保存对话消息失败", e);
+            return Result.error("系统内部错误：" + e.getMessage());
+        }
+    }
+
     @DeleteMapping("/history")
     public Map<String, Object> deleteHistoryItem(@RequestParam("timestamp") Long timestamp) {
         try {
@@ -247,14 +304,14 @@ public class AiChatController {
                 if (aiDTO.getTravelType() == null || aiDTO.getTravelType().isBlank()) {
                     return buildErrorSseResponse(400, "出行类型不能为空");
                 }
-                userMessage = aiDTO.userMessages()+"content的具体内容Markdown格式的字符串（必须不少于650字）";
+                userMessage = aiDTO.userMessages()+"name这个名字字段必须要以所有路线开头（涵盖每个要去的景点）content的具体内容Markdown格式的字符串（必须不少于1000字），如果时间足够景点可以挑选一些其他符合的，不用局限于所给的几个想去景点，但是注意顺路";
                 redisTemplate.opsForValue().set(redisKey, aiDTO, AI_SESSION_EXPIRE, AI_SESSION_TIME_UNIT);
             } else {
                 // 后续请求：优化
                 if (aiDTO.getMessage() == null || aiDTO.getMessage().isBlank()) {
                     return buildErrorSseResponse(400, "请输入你的旅行优化/新增要求");
                 }
-                userMessage = aiDTO.userMessages(historyAiDTO, aiDTO.getMessage())+"其中content字段的具体内容为Markdown格式的字符串（必须不少于650字）";
+                userMessage = aiDTO.userMessages(historyAiDTO, aiDTO.getMessage())+"name这个名字字段必须要以所有路线开头（涵盖每个要去的景点）content的具体内容Markdown格式的字符串（必须不少于1000字），如果时间足够景点可以挑选一些其他符合的，不用局限于所给的几个想去景点，但是注意顺路";
                 redisTemplate.expire(redisKey, AI_SESSION_EXPIRE, AI_SESSION_TIME_UNIT);
             }
 
@@ -276,6 +333,8 @@ public class AiChatController {
                             redisTemplate.opsForValue().set(conversationKey, conversationData, AI_CONVERSATION_EXPIRE, AI_CONVERSATION_TIME_UNIT);
                             log.info("对话数据已存储到Redis，键：{}", conversationKey);
 
+
+
                             // 读取Redis中的对话数据（验证存储成功）
                             Map<String, Object> storedConversation = (Map<String, Object>) redisTemplate.opsForValue().get(conversationKey);
                             if (storedConversation != null) {
@@ -289,9 +348,6 @@ public class AiChatController {
 
                             // 构建符合格式的SSE事件并返回正确的Publisher类型
                             ServerSentEvent<String> sseEvent = serializeToSse("ai-done", doneData);
-                            System.out.println(sseEvent);
-                            System.out.println(sseEvent.data());
-                            System.out.println(Mono.just(sseEvent));
                             return Mono.just(sseEvent);
                         } catch (Exception e) {
                             log.error("生成结构化旅行计划失败", e);
