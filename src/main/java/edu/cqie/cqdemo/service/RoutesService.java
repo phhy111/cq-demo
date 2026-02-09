@@ -13,4 +13,9 @@ import java.util.List;
 */
 public interface RoutesService extends IService<Routes> {
     public List<Routes> getRoutesListInfo();
+
+    //routes的所有status是1的升序
+    List<Routes> getRoutesListInfoTimeS();
+    //routes的所有status是1的降序
+    List<Routes> getRoutesListInfoTimeJ();
 }

@@ -29,6 +29,16 @@ public class RoutesServiceImpl extends ServiceImpl<RoutesMapper, Routes> impleme
     public List<Routes> getRoutesListInfo() {
         return routesMapper.getRoutesListInfo();
     }
+    @Override
+    public List<Routes> getRoutesListInfoTimeS()
+    {
+        return routesMapper.getRoutesListInfoByName();
+    }
+    @Override
+    public List<Routes> getRoutesListInfoTimeJ()
+    {
+        return routesMapper.getRoutesListInfoByCode();
+    }
 }
 
 

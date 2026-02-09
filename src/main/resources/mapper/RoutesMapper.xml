@@ -13,4 +13,16 @@
             -- 取得分最高的前5条
             LIMIT 5;
     </select>
+    <select id="getRoutesListInfoByName" resultType="edu.cqie.cqdemo.entity.Routes">
+        SELECT *
+        FROM routes
+        WHERE status = 1  -- 仅查询状态为1的记录
+        ORDER BY create_time ASC;
+    </select>
+    <select id="getRoutesListInfoByCode" resultType="edu.cqie.cqdemo.entity.Routes">
+        SELECT *
+        FROM routes
+        WHERE status = 1  -- 仅查询状态为1的记录
+        ORDER BY create_time DESC;
+    </select>
 </mapper>
