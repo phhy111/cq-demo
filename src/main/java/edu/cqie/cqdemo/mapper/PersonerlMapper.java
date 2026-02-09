@@ -9,4 +9,10 @@ import org.apache.ibatis.annotations.Select;
 public interface PersonerlMapper {
     Users selectuser(@Param("id") long id);
     Users selectUserByUsername(@Param("username") String username);
+    //修改手机号
+    int updateUserphone(@Param("id") long id);
+    //修改密码
+    int updateUserpassword(@Param("id") long id);
+    //修改邮箱
+    int updateUseremail(@Param("id") long id);
 }

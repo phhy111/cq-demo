@@ -14,9 +14,21 @@ public class PersonelServiceimpl implements PersonerlService {
     public Users getUser(Long id) {
         return personerlMapper.selectuser(id);
     }
+    //修改用户手机号
 
     @Override
-    public Users getUserByUsername(String username) {
-        return personerlMapper.selectUserByUsername(username);
+    public int updateUserphone(Long id) {
+        int result=personerlMapper.updateUserphone(id);
+        return result;
+    }
+
+    @Override
+    public int updateUserpassword(Long id) {
+        return 0;
+    }
+
+    @Override
+    public int updateUseremail(Long id) {
+        return 0;
     }
 }
