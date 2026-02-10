@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import edu.cqie.cqdemo.entity.Routes;
 import org.apache.ibatis.annotations.Mapper;
 
+import javax.swing.*;
 import java.util.List;
 
 /**
@@ -16,6 +17,15 @@ import java.util.List;
 @Mapper
 public interface RoutesMapper extends BaseMapper<Routes> {
     public List<Routes> getRoutesListInfo();
+
+    //所有static为1的时间升序
+    List<Routes> getRoutesListInfoByName();
+    //所有static为1的时间降序
+    List<Routes> getRoutesListInfoByCode();
+
+    List<Routes> getAllHeatS();
+
+    List<Routes> getAllHeatJ();
 }
 
 

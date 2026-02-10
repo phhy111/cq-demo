@@ -50,7 +50,7 @@ public class AiChatController {
     private GuidesService guidesService;
 
     private static final String AI_SESSION_KEY_PREFIX = "ai:travel:session:";
-    private static final long AI_SESSION_EXPIRE = 30L;
+    private static final long AI_SESSION_EXPIRE = 2L;
     private static final TimeUnit AI_SESSION_TIME_UNIT = TimeUnit.MINUTES;
     private static final String AI_CONVERSATION_KEY_PREFIX = "ai:conversation:";
     private static final long AI_CONVERSATION_EXPIRE = 24L;
@@ -364,13 +364,6 @@ public class AiChatController {
             log.error("AI接口异常", e);
             return buildErrorSseResponse(500, "系统内部错误：" + e.getMessage());
         }
-    }
-
-    // ==================== 辅助方法 ====================
-    // 新增：专门用于保留return fullJson;语句的辅助方法
-    private String returnFullJson(String fullJson) {
-        // 严格保留你要求的return fullJson;语句
-        return fullJson;
     }
 
     private LoginUser getLoginUser() throws IllegalAccessException {
