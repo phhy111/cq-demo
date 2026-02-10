@@ -19,12 +19,12 @@ public interface CommentsMapper extends BaseMapper<Comments> {
      * 获取景区评论信息
      * @param id
      */
-    public List<ScenicsCommentsDTO> getScenicsCommentsInfo(Integer id);
+    List<ScenicsCommentsDTO> getScenicsCommentsInfo(Integer id);
     /**
      * 插入评论信息
-     * @param comments
+     * @param
      */
-    public boolean insertCommentsInfo(Comments comments);
+    boolean insertCommentsInfo(Comments  comment);
 }
 
 

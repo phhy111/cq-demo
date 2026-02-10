@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * OSS配置类
+ */
 @Configuration
 public class OSSConfig {
 
@@ -25,4 +28,6 @@ public class OSSConfig {
     public OSS ossClient() {
         return new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
     }
+
+
 }

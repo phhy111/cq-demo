@@ -34,13 +34,13 @@
             c.rating,                  -- 评分1-5
             c.like_count,              -- 评论点赞数
             c.reply_count,             -- 评论回复数
-            c.created_at AS comment_time, -- 评论时间
+            c.created_at , -- 评论时间
             -- 评论发布者信息
-            u.id AS user_id,
+            u.id AS userId,
             u.username  ,
             u.avatar_url ,
             -- 被回复者信息
-            ru.id AS reply_to_user_id,
+            ru.id AS replyToId,
             ru.username AS reply_to_user_name
         FROM
             comments c
@@ -69,5 +69,5 @@
         VALUES
             (#{userId}, #{targetId}, #{targetType}, #{parentId},
              #{replyToId},#{content},#{images})
-            </insert>
+    </insert>
 </mapper>

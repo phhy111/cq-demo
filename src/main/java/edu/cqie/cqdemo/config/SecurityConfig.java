@@ -78,6 +78,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 放行接口（已补全斜杠，正确）
                         .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/sendCode","/api/ai/chat").permitAll()
+                        .requestMatchers("/api/comments/AddCommentsInfo").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
