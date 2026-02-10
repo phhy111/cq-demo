@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.util.Date;
+
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
@@ -23,6 +25,7 @@ public class Comments {
     /**
      * 用户ID（修正为和users.id一致的类型）
      */
+    @TableField(value = "user_id")
     private Long userId;
 
     /**
@@ -48,6 +51,7 @@ public class Comments {
     /**
      * 评论内容
      */
+    @NotNull(message = "评论内容不能为空")
     private String content;
 
     /**

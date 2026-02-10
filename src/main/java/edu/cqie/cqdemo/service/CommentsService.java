@@ -17,13 +17,13 @@ public interface CommentsService extends IService<Comments> {
      * @param id
      * @return
      */
-    public List<ScenicsCommentsDTO> getScenicsCommentsInfo(Integer id);
+    List<ScenicsCommentsDTO> getScenicsCommentsInfo(Integer id);
 
     /**
      * 添加评论
      * @param comments
      * @return
      */
-    public boolean insertCommentsInfo(Comments comments);
-
+// 添加评论的业务方法（带用户信息）
+    boolean addCommentWithUserInfo(Comments comments);
 }
