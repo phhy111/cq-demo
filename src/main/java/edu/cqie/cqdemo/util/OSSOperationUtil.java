@@ -1,23 +1,39 @@
 package edu.cqie.cqdemo.util;
 
 import com.aliyun.oss.OSS;
+import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.model.ListObjectsRequest;
 import com.aliyun.oss.model.OSSObjectSummary;
 import com.aliyun.oss.model.ObjectListing;
+import com.aliyun.oss.model.PutObjectRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
+/**
+ * OSS操作工具类
+ */
 @Component
+@Slf4j
 public class OSSOperationUtil {
 
+    // 从配置文件读取 OSS 信息
     @Value("${aliyun.oss.endpoint}")
     private String endpoint;
-
+    @Value("${aliyun.oss.accessKeyId}")
+    private String accessKeyId;
+    @Value("${aliyun.oss.accessKeySecret}")
+    private String accessKeySecret;
     @Value("${aliyun.oss.bucketName}")
     private String bucketName;
+    @Value("${aliyun.oss.prefix}")
+    private String prefix;
 
     private  final OSS ossClient;
 
@@ -54,6 +70,44 @@ public class OSSOperationUtil {
         }
         return imageUrls;
     }
+
+    /**
+     * 上传评论图片到阿里云 OSS
+     * @param file 前端上传的文件
+     * @return 阿里云返回的图片 URL
+     */
+    public String upload(MultipartFile file) {
+        try {
+            // 1. 获取文件输入流
+            InputStream inputStream = file.getInputStream();
+
+            // 2. 生成唯一文件名（避免重复）：uuid + 原文件名后缀
+            String originalFilename = file.getOriginalFilename();
+            String suffix = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String fileName = UUID.randomUUID().toString() + suffix;
+
+            // 3. 构建 OSS 存储路径（比如 cq_list/comment/202602/xxx.png）
+            String objectName = "comments_img/" + fileName;
+
+            // 4. 创建 OSS 客户端并上传文件
+            OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, inputStream);
+            ossClient.putObject(putObjectRequest);
+
+            // 5. 关闭客户端
+            ossClient.shutdown();
+
+            // 6. 返回完整的图片 URL（和你现有路径格式一致）
+            String url = prefix + objectName;
+            log.info("图片上传成功，URL：{}", url);
+            return url;
+        } catch (Exception e) {
+            log.error("图片上传阿里云失败", e);
+            throw new RuntimeException("图片上传失败");
+        }
+    }
+
+
 
     /**
      * 辅助方法：判断文件是否为图片
@@ -94,6 +148,8 @@ public class OSSOperationUtil {
 
         return imageUrls;
     }
+
+
 
     /**
      * 销毁OSS客户端
