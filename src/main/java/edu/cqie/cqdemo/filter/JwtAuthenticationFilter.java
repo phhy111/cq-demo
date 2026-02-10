@@ -35,8 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String uri = request.getRequestURI();
             if (uri.startsWith("/api/auth/login")
                     || uri.startsWith("/api/auth/register")
-                    || uri.startsWith("/api/auth/sendCode")
-                    || uri.startsWith("/api/ai/chat")) { // 新增AI聊天接口白名单
+                    || uri.startsWith("/api/auth/sendCode")) {
                 filterChain.doFilter(request, response);
                 return;
             }
