@@ -10,7 +10,7 @@ public interface PersonerlMapper {
     Users selectuser(@Param("id") long id);
     Users selectUserByUsername(@Param("username") String username);
     //修改手机号
-    int updateUserphone(@Param("id") long id);
+    int updateUserphone(@Param("id") long id ,@Param("phone") String phone);
     //修改密码
     int updateUserpassword(@Param("id") long id);
     //修改邮箱

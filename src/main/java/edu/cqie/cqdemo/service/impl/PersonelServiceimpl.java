@@ -17,8 +17,8 @@ public class PersonelServiceimpl implements PersonerlService {
     //修改用户手机号
 
     @Override
-    public int updateUserphone(Long id) {
-        int result=personerlMapper.updateUserphone(id);
+    public int updateUserphone(Long id, String phone) {
+        int result=personerlMapper.updateUserphone(id ,phone);
         return result;
     }
 
