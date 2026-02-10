@@ -39,6 +39,16 @@ public class RoutesServiceImpl extends ServiceImpl<RoutesMapper, Routes> impleme
     {
         return routesMapper.getRoutesListInfoByCode();
     }
+    @Override
+    public List<Routes>getAllHeatS()
+    {
+        return routesMapper.getAllHeatS();
+    }
+    @Override
+    public List<Routes>getAllHeatJ()
+    {
+        return routesMapper.getAllHeatJ();
+    }
 }
 
 

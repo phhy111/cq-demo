@@ -22,6 +22,10 @@ public interface RoutesMapper extends BaseMapper<Routes> {
     List<Routes> getRoutesListInfoByName();
     //所有static为1的时间降序
     List<Routes> getRoutesListInfoByCode();
+
+    List<Routes> getAllHeatS();
+
+    List<Routes> getAllHeatJ();
 }
 
 

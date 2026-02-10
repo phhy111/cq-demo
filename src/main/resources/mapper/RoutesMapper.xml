@@ -8,6 +8,7 @@
             (like_count * 0.5 + collect_count * 0.3 + comment_count * 0.2) AS composite_score
         FROM
             routes
+        WHERE status = 1  -- 仅查询状态为1的记录
         ORDER BY
             composite_score DESC
             -- 取得分最高的前5条
@@ -17,12 +18,25 @@
         SELECT *
         FROM routes
         WHERE status = 1  -- 仅查询状态为1的记录
-        ORDER BY create_time ASC;
+        ORDER BY created_at ASC;
     </select>
     <select id="getRoutesListInfoByCode" resultType="edu.cqie.cqdemo.entity.Routes">
         SELECT *
         FROM routes
         WHERE status = 1  -- 仅查询状态为1的记录
-        ORDER BY create_time DESC;
+        ORDER BY created_at DESC;
+    </select>
+    <select id="getAllHeatS" resultType="edu.cqie.cqdemo.entity.Routes">
+        SELECT *
+        FROM routes
+        WHERE status = 1  -- 仅查询状态为1的记录
+        ORDER BY
+            (like_count * 0.5 + collect_count * 0.3 + comment_count * 0.2)ASC
+    </select>
+    <select id="getAllHeatJ" resultType="edu.cqie.cqdemo.entity.Routes">
+        SELECT *
+        FROM routes
+        WHERE status = 1  -- 仅查询状态为1的记录
+        ORDER BY (like_count * 0.5 + collect_count * 0.3 + comment_count * 0.2)DESC
     </select>
 </mapper>

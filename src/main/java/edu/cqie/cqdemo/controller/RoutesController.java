@@ -45,4 +45,15 @@ public class RoutesController {
         return Result.success(allRoutes);
     }
 
+    @GetMapping("/getRoutesHeatS")
+    public Result<List<Routes>> getRoutesHeatS(){
+        List<Routes> allHeatS =routesService.getAllHeatS();
+        return Result.success(allHeatS);
+    }
+
+    @GetMapping("/getRoutesHeatJ")
+    public Result<List<Routes>> getRoutesHeatJ(){
+        List<Routes> allHeatJ =routesService.getAllHeatJ();
+        return Result.success(allHeatJ);
+    }
 }

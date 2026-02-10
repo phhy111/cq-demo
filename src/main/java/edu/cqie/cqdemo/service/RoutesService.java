@@ -18,4 +18,7 @@ public interface RoutesService extends IService<Routes> {
     List<Routes> getRoutesListInfoTimeS();
     //routes的所有status是1的降序
     List<Routes> getRoutesListInfoTimeJ();
+
+    List<Routes> getAllHeatS();
+    List<Routes> getAllHeatJ();
 }
