@@ -5,7 +5,7 @@ import org.apache.ibatis.annotations.Param;
 
 public interface PersonerlService {
     public Users getUser(Long id);
-    public int updateUserphone(Long id);
+    public int updateUserphone(Long id ,String  phone);
     public int updateUserpassword(Long id);
     public int updateUseremail(Long id);
 }
