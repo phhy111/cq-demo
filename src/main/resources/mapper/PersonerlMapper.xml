@@ -20,4 +20,8 @@
     <update id="updateUseremail">
         update users set email= #{email} where id= #{id}
     </update>
+<!--    修改性别-->
+    <update id="updateUsersex">
+            update users set gender= #{gender} where id= #{id}
+    </update>
 </mapper>
