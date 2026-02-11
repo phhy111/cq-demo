@@ -23,12 +23,20 @@ public class PersonelServiceimpl implements PersonerlService {
     }
 
     @Override
-    public int updateUserpassword(Long id) {
-        return 0;
+    public int updateUserpassword(Long id, String password) {
+        int result=personerlMapper.updateUserpassword(id,password);
+        return result;
     }
 
     @Override
-    public int updateUseremail(Long id) {
-        return 0;
+    public int updateUseremail(Long id,String  email) {
+       int result=personerlMapper.updateUseremail(id,email);
+       return  result;
+    }
+
+    @Override
+    public int updateUsersex(Long id, int gender) {
+        int result=personerlMapper.updateUsersex(id,gender);
+        return result;
     }
 }
