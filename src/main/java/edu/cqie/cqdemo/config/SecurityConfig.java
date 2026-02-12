@@ -62,7 +62,6 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
-
     /**
      * 安全过滤链（核心修正：新增.userDetailsService(userDetailsService)）
      */
@@ -80,6 +79,13 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
+                .logout(logout -> logout
+                        .logoutUrl("/api/auth/logout")
+                        .permitAll()
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            response.setStatus(200);
+                            response.getWriter().write("{\"code\": 200, \"message\": \"退出成功\"}");
+                        }))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
