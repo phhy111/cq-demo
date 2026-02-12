@@ -135,8 +135,8 @@ public class Guides{
     /**
      * 预留字段2
      */
-    @TableField("ext2")
-    private String ext2;
+    @TableField("budget_info")
+    private Double budgetInfo;
 
     /**
      * 预留字段3

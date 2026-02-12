@@ -31,11 +31,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         try {
+            // 对OPTIONS预检请求直接放行（解决CORS跨域问题）
+            if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+            
             // 对无需登录的接口直接放行
             String uri = request.getRequestURI();
             if (uri.startsWith("/api/auth/login")
                     || uri.startsWith("/api/auth/register")
-                    || uri.startsWith("/api/auth/sendCode")) {
+                    || uri.startsWith("/api/auth/sendCode")
+                    || uri.startsWith("/api/comments/AddCommentsInfo")) {
                 filterChain.doFilter(request, response);
                 return;
             }
@@ -83,7 +90,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 // 5. 验证Token有效性
                 if (jwtUtil.validateToken(token, userDetails)) {
-                    // 6. 设置认证信息到SecurityContext
+                    // 6. 检查是否需要刷新Token（剩余时间<10分钟）
+                    if (jwtUtil.shouldRefreshToken(token)) {
+                        // 生成新的Token
+                        String newToken = jwtUtil.refreshToken(token);
+                        // 将新Token通过响应头返回给前端
+                        response.setHeader("Authorization", "Bearer " + newToken);
+                        log.info("用户{}的Token剩余时间不足10分钟，已自动刷新", username);
+                    }
+                    
+                    // 7. 设置认证信息到SecurityContext
                     UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities()
                     );

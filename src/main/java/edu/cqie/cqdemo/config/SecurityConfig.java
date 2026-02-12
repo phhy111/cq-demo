@@ -13,6 +13,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -71,14 +72,12 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // ########### 核心新增行 ###########
                 // 显式指定使用自定义的用户详情服务，覆盖框架默认实现，全程使用LoginUser
                 .userDetailsService(userDetailsService)
-                // #################################
                 .authorizeHttpRequests(auth -> auth
-                        // 放行接口（已补全斜杠，正确）
-                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/sendCode","/api/ai/chat").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/sendCode","api/ai/chat").permitAll()
                         .requestMatchers("/api/comments/AddCommentsInfo").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

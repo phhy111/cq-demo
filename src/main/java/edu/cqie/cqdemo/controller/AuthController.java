@@ -72,7 +72,7 @@ public class AuthController {
 
             // 登录信息写入 Redis，保证 2 小时时效
             String loginKey = "login_token:" + userDetails.getUsername();
-            stringRedisTemplate.opsForValue().set(loginKey, token, 2, TimeUnit.HOURS);
+            stringRedisTemplate.opsForValue().set(loginKey, token, 30, TimeUnit.MINUTES);
 
             // 根据用户名查询用户信息
             Users user = sysUserMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Users>()

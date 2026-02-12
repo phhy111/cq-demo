@@ -20,6 +20,7 @@ import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import jakarta.annotation.Resource;
 import reactor.core.publisher.Flux;
@@ -173,7 +174,7 @@ public class AiChatController {
 
     @PostMapping("/addChatMessage")
     @Transactional
-    public Result<String> addChatMessage(@RequestBody Map<String, Object> request) {
+    public Result<Map<String, Object>> addChatMessage(@RequestBody Map<String, Object> request) {
         try {
             LoginUser loginUser = this.getLoginUser();
             Long userId = loginUser.getId();
@@ -191,6 +192,7 @@ public class AiChatController {
             routes.setUserId(userId);
             routes.setTitle((String) aiReportMap.get("name"));
             routes.setDescription((String) aiReportMap.get("highlights"));
+            routes.setSubtitle((String) aiReportMap.get("routesInfo"));
             // 保存到数据库
             routesService.save(routes);
             // 创建Guides对象
@@ -200,13 +202,33 @@ public class AiChatController {
             guides.setSummary((String) aiReportMap.get("routeIntro"));
             guides.setContent((String) aiReportMap.get("content"));
             guides.setCategory((String) aiDTOMap.get("travelType"));
+            // 将money值正确转换为Double类型，避免数据截断错误
+            Object moneyObj = aiReportMap.get("money");
+            if (moneyObj != null) {
+                try {
+                    Double budgetInfo = null;
+                    if (moneyObj instanceof Number) {
+                        budgetInfo = ((Number) moneyObj).doubleValue();
+                    } else if (moneyObj instanceof String) {
+                        budgetInfo = Double.parseDouble((String) moneyObj);
+                    }
+                    guides.setBudgetInfo(budgetInfo);
+                } catch (Exception e) {
+                    log.warn("预算信息转换失败，使用空值: {}", e.getMessage());
+                }
+            }
             guides.setRoutesId(routes.getId());
 
             guidesService.save(guides);
             
             log.info("用户 {} 保存了对话消息，Routes ID: {}, Guides ID: {}", userId, routes.getId(), guides.getId());
             
-            return Result.success("保存成功");
+            // 返回保存成功的结果，包含生成的routesId值
+            Map<String, Object> result = new HashMap<>();
+            result.put("routesId", routes.getId());
+            result.put("guidesId", guides.getId());
+            result.put("msg", "保存成功");
+            return Result.success(result);
         } catch (IllegalAccessException e) {
             log.error("认证失败", e);
             return Result.error("用户未登录或令牌无效");
@@ -275,6 +297,65 @@ public class AiChatController {
         }
     }
 
+    @DeleteMapping("/deleteChatMessage")
+    @Transactional(rollbackFor = Exception.class)
+    public Result<String> deleteChatMessage(@RequestParam("routesId") String routesIdStr) {
+        try {
+            LoginUser loginUser = this.getLoginUser();
+            Long userId = loginUser.getId();
+
+            // 检查routesId是否为有效的数字
+            Integer routesId;
+            try {
+                // 尝试转换为Long
+                Long routesIdLong = Long.parseLong(routesIdStr.trim());
+                // 检查是否在Integer范围内
+                if (routesIdLong > Integer.MAX_VALUE || routesIdLong < Integer.MIN_VALUE) {
+                    return Result.error("routesId参数超出整数范围");
+                }
+                // 使用Integer类型以匹配数据库字段
+                routesId = routesIdLong.intValue();
+            } catch (NumberFormatException e) {
+                return Result.error("routesId参数必须是有效的数字");
+            }
+            
+            // 先检查该routesId是否属于当前用户
+            Routes routes = routesService.getById(routesId);
+            if (routes == null) {
+                return Result.error("未找到对应的路线信息");
+            }
+            if (!routes.getUserId().equals(userId)) {
+                return Result.error("无权删除其他用户的路线信息");
+            }
+            
+            // 先删除与该routesId关联的Guides信息
+            QueryWrapper<Guides> guidesQueryWrapper = new QueryWrapper<>();
+            guidesQueryWrapper.eq("routes_id", routesId);
+            boolean guidesDeleted = guidesService.remove(guidesQueryWrapper);
+            
+            if (!guidesDeleted) {
+                log.warn("删除Guides失败，Routes ID: {}", routesId);
+                // 继续执行，因为Guides可能不存在
+            }
+            
+            // 再删除Routes信息
+            boolean routesDeleted = routesService.removeById(routesId);
+            
+            if (routesDeleted) {
+                log.info("用户 {} 删除了对话消息，Routes ID: {}", userId, routesId);
+                return Result.success("删除成功");
+            } else {
+                return Result.error("删除失败，请稍后重试");
+            }
+        } catch (IllegalAccessException e) {
+            log.error("认证失败", e);
+            return Result.error("用户未登录或令牌无效");
+        } catch (Exception e) {
+            log.error("删除对话消息失败", e);
+            return Result.error("系统内部错误：" + e.getMessage());
+        }
+    }
+
     @PostMapping(
             value = "/chat",
             consumes = MediaType.APPLICATION_JSON_VALUE,
@@ -304,14 +385,14 @@ public class AiChatController {
                 if (aiDTO.getTravelType() == null || aiDTO.getTravelType().isBlank()) {
                     return buildErrorSseResponse(400, "出行类型不能为空");
                 }
-                userMessage = aiDTO.userMessages()+"name这个名字字段必须要以所有路线开头（涵盖每个要去的景点）content的具体内容Markdown格式的字符串（必须不少于1000字），如果时间足够景点可以挑选一些其他符合的，不用局限于所给的几个想去景点，但是注意顺路";
+                userMessage = aiDTO.userMessages()+"content的具体内容Markdown格式的字符串（必须不少于1000字），如果时间足够景点可以挑选一些其他符合的，不用局限于所给的几个想去景点，但是注意顺路";
                 redisTemplate.opsForValue().set(redisKey, aiDTO, AI_SESSION_EXPIRE, AI_SESSION_TIME_UNIT);
             } else {
                 // 后续请求：优化
                 if (aiDTO.getMessage() == null || aiDTO.getMessage().isBlank()) {
                     return buildErrorSseResponse(400, "请输入你的旅行优化/新增要求");
                 }
-                userMessage = aiDTO.userMessages(historyAiDTO, aiDTO.getMessage())+"name这个名字字段必须要以所有路线开头（涵盖每个要去的景点）content的具体内容Markdown格式的字符串（必须不少于1000字），如果时间足够景点可以挑选一些其他符合的，不用局限于所给的几个想去景点，但是注意顺路";
+                userMessage = aiDTO.userMessages(historyAiDTO, aiDTO.getMessage())+"content的具体内容Markdown格式的字符串（必须不少于1000字），如果时间足够景点可以挑选一些其他符合的，不用局限于所给的几个想去景点，但是注意顺路";
                 redisTemplate.expire(redisKey, AI_SESSION_EXPIRE, AI_SESSION_TIME_UNIT);
             }
 
@@ -319,7 +400,10 @@ public class AiChatController {
 
             return Flux.defer(() -> {
                         try {
+                            // 调用AI服务生成旅行计划
                             AiReport report = aiService.generateTravelPlan(userId, userMessage);
+                            
+                            // 将AI生成的报告转换为JSON字符串
                             String fullJson = OBJECT_MAPPER.writeValueAsString(report);
                             log.debug("结构化AI响应生成成功，JSON长度：{}", fullJson.length());
 
@@ -332,8 +416,6 @@ public class AiChatController {
                             conversationData.put("timestamp", System.currentTimeMillis());
                             redisTemplate.opsForValue().set(conversationKey, conversationData, AI_CONVERSATION_EXPIRE, AI_CONVERSATION_TIME_UNIT);
                             log.info("对话数据已存储到Redis，键：{}", conversationKey);
-
-
 
                             // 读取Redis中的对话数据（验证存储成功）
                             Map<String, Object> storedConversation = (Map<String, Object>) redisTemplate.opsForValue().get(conversationKey);
@@ -349,13 +431,31 @@ public class AiChatController {
                             // 构建符合格式的SSE事件并返回正确的Publisher类型
                             ServerSentEvent<String> sseEvent = serializeToSse("ai-done", doneData);
                             return Mono.just(sseEvent);
+                        } catch (dev.langchain4j.service.output.OutputParsingException e) {
+                            log.error("AI生成的JSON格式错误，解析失败", e);
+                            // 构建错误响应
+                            Map<String, Object> errorData = new HashMap<>();
+                            errorData.put("code", 400);
+                            errorData.put("msg", "AI生成的内容格式错误，请重试");
+                            errorData.put("data", "AI生成的JSON格式不正确，无法解析。请尝试修改旅行需求后重试。");
+                            ServerSentEvent<String> errorEvent = serializeToSse("ai-error", errorData);
+                            return Mono.just(errorEvent);
                         } catch (Exception e) {
                             log.error("生成结构化旅行计划失败", e);
-                            throw new RuntimeException(e);
+                            // 构建错误响应
+                            Map<String, Object> errorData = new HashMap<>();
+                            errorData.put("code", 500);
+                            errorData.put("msg", "系统内部错误");
+                            errorData.put("data", "生成旅行计划时发生错误，请稍后重试。");
+                            ServerSentEvent<String> errorEvent = serializeToSse("ai-error", errorData);
+                            return Mono.just(errorEvent);
                         }
                     })
                     .subscribeOn(Schedulers.boundedElastic())
-                    .onErrorResume(e -> buildErrorSseResponse(500, "AI生成失败：" + e.getMessage()));
+                    .onErrorResume(e -> {
+                        log.error("处理AI响应时发生错误", e);
+                        return buildErrorSseResponse(500, "系统错误：" + e.getMessage());
+                    });
 
         } catch (IllegalAccessException e) {
             log.error("认证失败", e);

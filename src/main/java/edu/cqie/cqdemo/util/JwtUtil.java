@@ -113,4 +113,40 @@ public class JwtUtil {
             return false;
         }
     }
+
+    /**
+     * 获取Token剩余有效期（毫秒）
+     */
+    public long getTokenRemainingTime(String token) {
+        Claims claims = parseToken(token);
+        Date expiration = claims.getExpiration();
+        return expiration.getTime() - System.currentTimeMillis();
+    }
+
+    /**
+     * 判断是否需要刷新Token（剩余时间<10分钟）
+     */
+    public boolean shouldRefreshToken(String token) {
+        long remainingTime = getTokenRemainingTime(token);
+        return remainingTime > 0 && remainingTime < 10 * 60 * 1000; // 10分钟
+    }
+
+    /**
+     * 刷新Token（当剩余时间<10分钟时调用）
+     */
+    public String refreshToken(String token) {
+        Claims claims = parseToken(token);
+        String username = claims.getSubject();
+        Long userId = claims.get("id", Long.class);
+
+        // 生成新的Token，保持相同的用户信息
+        SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
+        return Jwts.builder()
+                .setSubject(username)
+                .claim("id", userId)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + expireTime))
+                .signWith(key)
+                .compact();
+    }
 }
