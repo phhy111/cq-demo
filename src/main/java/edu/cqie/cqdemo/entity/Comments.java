@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.util.Date;
+import java.util.List;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -92,7 +93,7 @@ public class Comments {
     /**
      * 预留字段1
      */
-    private String ext1;
+    private String userName;
 
     /**
      * 预留字段2
@@ -113,4 +114,10 @@ public class Comments {
      * 预留字段5
      */
     private String ext5;
+    
+    /**
+     * 子评论列表（非数据库字段）
+     */
+    @TableField(exist = false)
+    private List<Comments> replies;
 }

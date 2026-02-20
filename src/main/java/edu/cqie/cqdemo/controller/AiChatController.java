@@ -68,10 +68,14 @@ public class AiChatController {
         try {
             LoginUser loginUser = this.getLoginUser();
             Long userId = loginUser.getId();
+            String travelWay =  request.get("travelWay");
             String message = request.get("message");
             
             if (message == null) {
                 return buildErrorSseResponse(400, "message参数不能为空");
+            }
+            if (travelWay == null) {
+                return buildErrorSseResponse(400, "travelWay参数不能为空");
             }
             
             // 构建Redis键的模式，用于匹配该用户的所有对话
@@ -84,7 +88,9 @@ public class AiChatController {
                     Map<String, Object> conversation = (Map<String, Object>) redisTemplate.opsForValue().get(key);
                     if (conversation != null) {
                         String userMessage = (String) conversation.get("userMessage");
-                        if (userMessage != null && userMessage.contains(message)) {
+                        String storedTravelWay = (String) conversation.get("travelWay");
+                        if (userMessage != null && userMessage.contains(message) && 
+                            (storedTravelWay == null || storedTravelWay.equals(travelWay))) {
                             targetConversation = conversation;
                             break;
                         }
@@ -183,6 +189,12 @@ public class AiChatController {
             Map<String, Object> aiDTOMap = (Map<String, Object>) request.get("aiDTO");
             Map<String, Object> aiReportMap = (Map<String, Object>) request.get("aiReport");
             
+            // 打印日志，查看前端发送的实际数据
+            log.info("前端发送的aiDTOMap: {}", aiDTOMap);
+            log.info("前端发送的aiReportMap: {}", aiReportMap);
+            log.info("aiDTOMap中的travelWay: {}", aiDTOMap != null ? aiDTOMap.get("travelWay") : "null");
+            log.info("aiReportMap中的travelWay: {}", aiReportMap != null ? aiReportMap.get("travelWay") : "null");
+            
             if (aiDTOMap == null || aiReportMap == null) {
                 return Result.error("请求参数不能为空");
             }
@@ -202,21 +214,36 @@ public class AiChatController {
             guides.setSummary((String) aiReportMap.get("routeIntro"));
             guides.setContent((String) aiReportMap.get("content"));
             guides.setCategory((String) aiDTOMap.get("travelType"));
-            // 将money值正确转换为Double类型，避免数据截断错误
+            // 处理budgetInfo的类型转换，确保无论输入是Integer还是Double都能正确转换
             Object moneyObj = aiReportMap.get("money");
             if (moneyObj != null) {
-                try {
-                    Double budgetInfo = null;
-                    if (moneyObj instanceof Number) {
-                        budgetInfo = ((Number) moneyObj).doubleValue();
-                    } else if (moneyObj instanceof String) {
-                        budgetInfo = Double.parseDouble((String) moneyObj);
-                    }
-                    guides.setBudgetInfo(budgetInfo);
-                } catch (Exception e) {
-                    log.warn("预算信息转换失败，使用空值: {}", e.getMessage());
+                if (moneyObj instanceof Integer) {
+                    guides.setBudgetInfo(((Integer) moneyObj).doubleValue());
+                } else if (moneyObj instanceof Double) {
+                    guides.setBudgetInfo((Double) moneyObj);
                 }
             }
+            // 同时检查aiDTOMap和aiReportMap中的travelWay字段，确保能够获取到正确的值
+            String travelWay = null;
+            if (aiDTOMap != null && aiDTOMap.get("travelWay") != null) {
+                travelWay = (String) aiDTOMap.get("travelWay");
+            } else if (aiReportMap != null && aiReportMap.get("travelWay") != null) {
+                travelWay = (String) aiReportMap.get("travelWay");
+            } else if (aiReportMap != null && aiReportMap.get("routeIntro") != null) {
+                // 从routeIntro中提取travelWay信息
+                String routeIntro = (String) aiReportMap.get("routeIntro");
+                if (routeIntro.contains("公共交通")) {
+                    travelWay = "公共交通";
+                } else if (routeIntro.contains("自驾")) {
+                    travelWay = "自驾";
+                } else if (routeIntro.contains("打车")) {
+                    travelWay = "打车";
+                } else if (routeIntro.contains("步行")) {
+                    travelWay = "步行";
+                }
+            }
+            guides.setTravelWay(travelWay);
+            log.info("最终设置的travelWay: {}", travelWay);
             guides.setRoutesId(routes.getId());
 
             guidesService.save(guides);
@@ -413,6 +440,8 @@ public class AiChatController {
                             conversationData.put("memoryId", userId);
                             conversationData.put("userMessage", userMessage);
                             conversationData.put("aiMessage", fullJson);
+                            conversationData.put("travelWay", aiDTO.getTravelWay());
+                            conversationData.put("travelType",aiDTO.getTravelType());
                             conversationData.put("timestamp", System.currentTimeMillis());
                             redisTemplate.opsForValue().set(conversationKey, conversationData, AI_CONVERSATION_EXPIRE, AI_CONVERSATION_TIME_UNIT);
                             log.info("对话数据已存储到Redis，键：{}", conversationKey);

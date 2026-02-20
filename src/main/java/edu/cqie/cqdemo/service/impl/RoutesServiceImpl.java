@@ -17,6 +17,8 @@ import java.util.List;
 */
 @Service
 public class RoutesServiceImpl extends ServiceImpl<RoutesMapper, Routes> implements RoutesService {
+    private static final String LIKE_KEY_PREFIX = "routes:like:";
+
 
     @Autowired
     private RoutesMapper routesMapper;
@@ -48,6 +50,16 @@ public class RoutesServiceImpl extends ServiceImpl<RoutesMapper, Routes> impleme
     public List<Routes>getAllHeatJ()
     {
         return routesMapper.getAllHeatJ();
+    }
+
+    @Override
+    public void updateLikeCountAndCollectCount() {
+        routesMapper.updateLikeCountAndCollectCount();
+    }
+
+    @Override
+    public Routes getRouteDetail(Integer id) {
+        return routesMapper.getRouteDetail(id);
     }
 }
 

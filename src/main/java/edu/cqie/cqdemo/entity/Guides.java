@@ -133,16 +133,16 @@ public class Guides{
     private Integer routesId;
 
     /**
-     * 预留字段2
+     * 预算
      */
     @TableField("budget_info")
     private Double budgetInfo;
 
     /**
-     * 预留字段3
+     * 出行方式
      */
-    @TableField("ext3")
-    private String ext3;
+    @TableField("travel_way")
+    private String travelWay;
 
     /**
      * 预留字段4

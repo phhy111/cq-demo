@@ -26,4 +26,22 @@ public interface CommentsService extends IService<Comments> {
      */
 // 添加评论的业务方法（带用户信息）
     boolean addCommentWithUserInfo(Comments comments);
+
+    List<Comments> getRoutesComments(Integer targetId,Integer targetType);
+    
+    /**
+     * 获取评论的回复列表
+     * @param commentId 评论ID
+     * @param page 页码（从1开始）
+     * @param size 每页大小
+     * @return 回复列表
+     */
+    List<Comments> getCommentReplies(Integer commentId, Integer page, Integer size);
+    
+    /**
+     * 递归获取评论的所有回复（包括子评论的子评论）
+     * @param commentId 评论ID
+     * @return 回复树结构
+     */
+    List<Comments> getCommentRepliesRecursive(Integer commentId);
 }

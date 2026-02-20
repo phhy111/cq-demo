@@ -6,4 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
 public interface UserMapper extends BaseMapper<Users> {
+
+    //获取用户名
+    String getUserName(Long id);
 }

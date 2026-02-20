@@ -1,9 +1,9 @@
 package edu.cqie.cqdemo.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import edu.cqie.cqdemo.entity.Guides;
+import edu.cqie.cqdemo.entity.Collections;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface GuidesMapper extends BaseMapper<Guides> {
+public interface CollectionsMapper extends BaseMapper<Collections> {
 }

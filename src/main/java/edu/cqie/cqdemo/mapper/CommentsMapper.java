@@ -25,6 +25,25 @@ public interface CommentsMapper extends BaseMapper<Comments> {
      * @param
      */
     boolean insertCommentsInfo(Comments  comment);
+
+    //获取相应评论
+    List<Comments> getCommentDetail(Integer targetId,Integer targetType);
+    
+    /**
+     * 获取评论的回复列表
+     * @param commentId 评论ID
+     * @param page 页码（从1开始）
+     * @param size 每页大小
+     * @return 回复列表
+     */
+    List<Comments> getCommentReplies(Integer commentId, Integer page, Integer size);
+    
+    /**
+     * 获取直接回复某个评论的所有子评论
+     * @param commentId 评论ID
+     * @return 直接回复列表
+     */
+    List<Comments> getDirectReplies(Integer commentId);
 }
 
 

@@ -26,6 +26,10 @@ public interface RoutesMapper extends BaseMapper<Routes> {
     List<Routes> getAllHeatS();
 
     List<Routes> getAllHeatJ();
+
+    void updateLikeCountAndCollectCount();
+
+    Routes getRouteDetail(Integer id);
 }
 
 

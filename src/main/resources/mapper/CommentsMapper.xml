@@ -1,34 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mapper
-        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="edu.cqie.cqdemo.mapper.CommentsMapper">
 
-    <resultMap id="BaseResultMap" type="edu.cqie.cqdemo.dto.ScenicsCommentsDTO">
-            <id property="id" column="id" />
-            <result property="userId" column="user_id" />
-            <result property="targetId" column="target_id" />
-            <result property="targetType" column="target_type" />
-            <result property="parentId" column="parent_id" />
-            <result property="replyToId" column="reply_to_id" />
-            <result property="content" column="content" />
-            <result property="images" column="images" />
-            <result property="rating" column="rating" />
-            <result property="likeCount" column="like_count" />
-            <result property="replyCount" column="reply_count" />
-            <result property="status" column="status" />
-            <result property="createdAt" column="created_at" />
-            <result property="updatedAt" column="updated_at" />
-            <result property="username" column="username"/>
-            <result property="avatarUrl" column="avatar_url"/>
-            <result property="commentId" column="comment_id"/>
+    <resultMap id="CommentsResult" type="edu.cqie.cqdemo.entity.Comments">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="targetId" column="target_id"/>
+        <result property="targetType" column="target_type"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="replyToId" column="reply_to_id"/>
+        <result property="content" column="content"/>
+        <result property="images" column="images"/>
+        <result property="rating" column="rating"/>
+        <result property="likeCount" column="like_count"/>
+        <result property="replyCount" column="reply_count"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="userName" column="user_name"/>
+        <result property="ext2" column="ext2"/>
+        <result property="ext3" column="ext3"/>
+        <result property="ext4" column="ext4"/>
+        <result property="ext5" column="ext5"/>
     </resultMap>
-    <!--  查询景点评论详细信息  -->
+
     <select id="getScenicsCommentsInfo" resultType="edu.cqie.cqdemo.dto.ScenicsCommentsDTO">
         SELECT
             c.id AS comment_id,        -- 评论ID
             c.parent_id,               -- 父评论ID（0=主评论，>0=回复，关联对应主评论comment_id）
-            c.reply_to_id,             -- 回复给哪个用户的ID（可选，用于显示“XX回复了XX”）
+            c.reply_to_id,             -- 回复给哪个用户的ID（可选，用于显示"XX回复了XX"）
             c.content,                 -- 评论内容
             c.images,                  -- 评论图片JSON数组
             c.rating,                  -- 评分1-5
@@ -61,13 +61,44 @@
             c.created_at DESC;         -- 组内按评论时间倒序（最新的评论/回复在前）
     </select>
 
+    <select id="getCommentDetail" resultMap="CommentsResult">
+        SELECT
+            co.*,
+            (SELECT COUNT(*) FROM comments WHERE parent_id = co.id AND status = 1) AS reply_count
+        FROM comments co
+        WHERE co.target_id = #{targetId}
+          AND co.target_type = #{targetType}
+          AND co.parent_id = 0
+          AND co.status = 1
+        ORDER BY co.like_count DESC
+    </select>
+
     <!--  插入评论信息  -->
     <insert id="insertCommentsInfo">
         INSERT INTO comments
-            (`user_id`, `target_id`, `target_type`, `parent_id`,
-             `reply_to_id`, `content`, `images`)
+        (`user_id`, `target_id`, `target_type`, `parent_id`,
+         `reply_to_id`, `content`, `images`)
         VALUES
             (#{userId}, #{targetId}, #{targetType}, #{parentId},
              #{replyToId},#{content},#{images})
     </insert>
+
+    <!--  获取评论的回复列表  -->
+    <select id="getCommentReplies" resultMap="CommentsResult">
+        SELECT *
+        FROM comments
+        WHERE parent_id = #{commentId}
+          AND status = 1
+        ORDER BY like_count DESC
+            LIMIT #{size} OFFSET ${(page - 1) * size}
+    </select>
+
+    <!--  获取直接回复某个评论的所有子评论  -->
+    <select id="getDirectReplies" resultMap="CommentsResult">
+        SELECT *
+        FROM comments
+        WHERE parent_id = #{commentId}
+          AND status = 1
+        ORDER BY like_count DESC
+    </select>
 </mapper>

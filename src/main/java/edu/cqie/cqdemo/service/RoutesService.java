@@ -21,4 +21,10 @@ public interface RoutesService extends IService<Routes> {
 
     List<Routes> getAllHeatS();
     List<Routes> getAllHeatJ();
+    
+    // 更新点赞数和收藏数
+    void updateLikeCountAndCollectCount();
+
+    //查看特定id的路线信息
+    Routes getRouteDetail(Integer id);
 }

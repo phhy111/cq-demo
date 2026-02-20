@@ -10,6 +10,7 @@ import edu.cqie.cqdemo.mapper.CommentsMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.xml.stream.events.Comment;
 import java.util.List;
 
 /**
@@ -41,6 +42,28 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments>
     }
 
 
+    @Override
+    public List<Comments> getRoutesComments(Integer targetId,Integer targetType)
+    {
+        return commentsMapper.getCommentDetail(targetId,targetType);
+    }
+
+    @Override
+    public List<Comments> getCommentReplies(Integer commentId, Integer page, Integer size) {
+        return commentsMapper.getCommentReplies(commentId, page, size);
+    }
+
+    @Override
+    public List<Comments> getCommentRepliesRecursive(Integer commentId) {
+        // 获取直接回复
+        List<Comments> directReplies = commentsMapper.getDirectReplies(commentId);
+        // 递归获取每个直接回复的子回复
+        for (Comments reply : directReplies) {
+            List<Comments> childReplies = getCommentRepliesRecursive(reply.getId());
+            reply.setReplies(childReplies);
+        }
+        return directReplies;
+    }
 }
 
 

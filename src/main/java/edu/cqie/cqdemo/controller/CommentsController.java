@@ -3,7 +3,9 @@ package edu.cqie.cqdemo.controller;
 import edu.cqie.cqdemo.common.Result;
 import edu.cqie.cqdemo.dto.ScenicsCommentsDTO;
 import edu.cqie.cqdemo.entity.Comments;
+import edu.cqie.cqdemo.entity.Users;
 import edu.cqie.cqdemo.service.CommentsService;
+import edu.cqie.cqdemo.service.UserService;
 import edu.cqie.cqdemo.util.JwtUtil;
 import edu.cqie.cqdemo.util.OSSOperationUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,6 +32,9 @@ public class CommentsController {
 
     @Autowired
     private OSSOperationUtil ossOperationUtil;
+
+    @Autowired
+    private UserService userService;
     /**
      * 获取景点评论信息
      * @param id 景点id
@@ -90,5 +95,109 @@ public class CommentsController {
             log.error("添加评论失败", e);
             return Result.error("服务器内部错误：" + e.getMessage());
         }
+    }
+
+    @PostMapping("/addRouteComment")
+    public Result<?> addCommentsInfo(@RequestBody Comments comments,HttpServletRequest request) {
+        try
+        {
+
+            String token = jwtUtil.getTokenFromRequest(request);
+            if (token == null || !jwtUtil.validateToken(token)) {
+                return Result.error("无效的Token");
+            }
+            boolean success = jwtUtil.validateToken(token);
+            if (success)
+            {
+                Long userId = jwtUtil.getUserIdFromToken(token);
+                comments.setUserId(userId);
+                String userName = userService.getUserName(userId);
+                comments.setUserName(userName);
+                commentsService.addCommentWithUserInfo(comments);
+                // 查询用户信息
+                Users user = userService.getUserById(userId);
+                // 构建响应对象
+                java.util.Map<String, Object> response = new java.util.HashMap<>();
+                response.put("message", "评论添加成功");
+                response.put("user", user);
+                return Result.success(response);
+            }else{
+                return Result.success("用户未登录");
+            }
+
+        } catch (Exception e) {
+            // 打印异常便于排查
+            e.printStackTrace();
+            return Result.error("评论添加失败：" + e.getMessage());
+        }
+    }
+    
+    @PostMapping("/replyComment")
+    public Result<?> replyComment(@RequestBody Comments comments, HttpServletRequest request) {
+        try {
+            String token = jwtUtil.getTokenFromRequest(request);
+            if (token == null || !jwtUtil.validateToken(token)) {
+                return Result.error("无效的Token");
+            }
+            Long userId = jwtUtil.getUserIdFromToken(token);
+            comments.setUserId(userId);
+            String userName = userService.getUserName(userId);
+            comments.setUserName(userName);
+            commentsService.addCommentWithUserInfo(comments);
+            // 查询用户信息
+            Users user = userService.getUserById(userId);
+            // 构建响应对象
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("message", "回复添加成功");
+            response.put("user", user);
+            return Result.success(response);
+        } catch (Exception e) {
+            // 打印异常便于排查
+            e.printStackTrace();
+            return Result.error("回复添加失败：" + e.getMessage());
+        }
+    }
+    
+    @GetMapping("/getCommentReplies")
+    public Result<List<Comments>> getCommentReplies(Integer commentId, Integer page, Integer size) {
+        try {
+            // 默认值设置
+            if (page == null || page < 1) {
+                page = 1;
+            }
+            if (size == null || size < 1) {
+                size = 10;
+            }
+            List<Comments> replies = commentsService.getCommentReplies(commentId, page, size);
+            return Result.success(replies);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("获取回复失败：" + e.getMessage());
+        }
+    }
+    
+    @GetMapping("/getCommentRepliesRecursive")
+    public Result<List<Comments>> getCommentRepliesRecursive(Integer commentId) {
+        try {
+            List<Comments> replies = commentsService.getCommentRepliesRecursive(commentId);
+            return Result.success(replies);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("获取回复失败：" + e.getMessage());
+        }
+    }
+
+    @GetMapping("/getRoutesComments")
+    public Result<List<Comments>> getRoutesComments(Integer targetId,Integer targetType)
+    {
+        try
+        {
+            List<Comments> listComments = commentsService.getRoutesComments(targetId,targetType);
+            return Result.success(listComments);
+        }catch (Exception e)
+        {
+            return Result.error("获取路线评论失败" + e.getMessage());
+        }
+
     }
 }
