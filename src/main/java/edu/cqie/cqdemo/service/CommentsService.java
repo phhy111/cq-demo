@@ -1,6 +1,7 @@
 package edu.cqie.cqdemo.service;
 
 import edu.cqie.cqdemo.dto.ScenicsCommentsDTO;
+import edu.cqie.cqdemo.dto.CommentsDTO;
 import edu.cqie.cqdemo.entity.Comments;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -27,7 +28,7 @@ public interface CommentsService extends IService<Comments> {
 // 添加评论的业务方法（带用户信息）
     boolean addCommentWithUserInfo(Comments comments);
 
-    List<Comments> getRoutesComments(Integer targetId,Integer targetType);
+    List<CommentsDTO> getRoutesComments(Integer targetId,Integer targetType);
     
     /**
      * 获取评论的回复列表
@@ -36,12 +37,12 @@ public interface CommentsService extends IService<Comments> {
      * @param size 每页大小
      * @return 回复列表
      */
-    List<Comments> getCommentReplies(Integer commentId, Integer page, Integer size);
+    List<CommentsDTO> getCommentReplies(Integer commentId, Integer page, Integer size);
     
     /**
      * 递归获取评论的所有回复（包括子评论的子评论）
      * @param commentId 评论ID
      * @return 回复树结构
      */
-    List<Comments> getCommentRepliesRecursive(Integer commentId);
+    List<CommentsDTO> getCommentRepliesRecursive(Integer commentId);
 }

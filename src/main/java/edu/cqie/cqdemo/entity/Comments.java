@@ -93,7 +93,7 @@ public class Comments {
     /**
      * 预留字段1
      */
-    private String userName;
+    private String ext1;
 
     /**
      * 预留字段2

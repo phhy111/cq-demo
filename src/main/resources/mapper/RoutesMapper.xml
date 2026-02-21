@@ -16,6 +16,13 @@
                 FROM collections c
                 WHERE c.target_type = 3
                   AND c.target_id = r.id
+            ),
+            comment_count = (
+                SELECT IFNULL(COUNT(*), 0)
+                FROM comments cm
+                WHERE cm.target_type = 3
+                  AND cm.target_id = r.id
+                  AND cm.status = 1
             )
     </update>
     <select id="getRoutesListInfo" resultType="edu.cqie.cqdemo.entity.Routes">
@@ -57,8 +64,14 @@
         ORDER BY (like_count * 0.5 + collect_count * 0.3 + comment_count * 0.2)DESC
     </select>
     <select id="getRouteDetail" resultType="edu.cqie.cqdemo.entity.Routes">
-        SELECT *
-        FROM routes
-        WHERE id = #{id}
+        SELECT
+            r.*,
+            (SELECT IFNULL(COUNT(*), 0)
+             FROM comments c
+             WHERE c.target_type = 3
+               AND c.target_id = r.id
+               AND c.status = 1) AS comment_count
+        FROM routes r
+        WHERE r.id = #{id}
     </select>
 </mapper>

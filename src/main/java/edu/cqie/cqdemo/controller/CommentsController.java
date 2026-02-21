@@ -2,6 +2,7 @@ package edu.cqie.cqdemo.controller;
 
 import edu.cqie.cqdemo.common.Result;
 import edu.cqie.cqdemo.dto.ScenicsCommentsDTO;
+import edu.cqie.cqdemo.dto.CommentsDTO;
 import edu.cqie.cqdemo.entity.Comments;
 import edu.cqie.cqdemo.entity.Users;
 import edu.cqie.cqdemo.service.CommentsService;
@@ -111,8 +112,6 @@ public class CommentsController {
             {
                 Long userId = jwtUtil.getUserIdFromToken(token);
                 comments.setUserId(userId);
-                String userName = userService.getUserName(userId);
-                comments.setUserName(userName);
                 commentsService.addCommentWithUserInfo(comments);
                 // 查询用户信息
                 Users user = userService.getUserById(userId);
@@ -120,6 +119,7 @@ public class CommentsController {
                 java.util.Map<String, Object> response = new java.util.HashMap<>();
                 response.put("message", "评论添加成功");
                 response.put("user", user);
+                System.out.println("response:"+response);
                 return Result.success(response);
             }else{
                 return Result.success("用户未登录");
@@ -141,8 +141,6 @@ public class CommentsController {
             }
             Long userId = jwtUtil.getUserIdFromToken(token);
             comments.setUserId(userId);
-            String userName = userService.getUserName(userId);
-            comments.setUserName(userName);
             commentsService.addCommentWithUserInfo(comments);
             // 查询用户信息
             Users user = userService.getUserById(userId);
@@ -159,7 +157,7 @@ public class CommentsController {
     }
     
     @GetMapping("/getCommentReplies")
-    public Result<List<Comments>> getCommentReplies(Integer commentId, Integer page, Integer size) {
+    public Result<List<CommentsDTO>> getCommentReplies(Integer commentId, Integer page, Integer size) {
         try {
             // 默认值设置
             if (page == null || page < 1) {
@@ -168,7 +166,8 @@ public class CommentsController {
             if (size == null || size < 1) {
                 size = 10;
             }
-            List<Comments> replies = commentsService.getCommentReplies(commentId, page, size);
+            List<CommentsDTO> replies = commentsService.getCommentReplies(commentId, page, size);
+            System.out.println("replies:"+replies);
             return Result.success(replies);
         } catch (Exception e) {
             e.printStackTrace();
@@ -177,9 +176,10 @@ public class CommentsController {
     }
     
     @GetMapping("/getCommentRepliesRecursive")
-    public Result<List<Comments>> getCommentRepliesRecursive(Integer commentId) {
+    public Result<List<CommentsDTO>> getCommentRepliesRecursive(Integer commentId) {
         try {
-            List<Comments> replies = commentsService.getCommentRepliesRecursive(commentId);
+            List<CommentsDTO> replies = commentsService.getCommentRepliesRecursive(commentId);
+            System.out.println("replies:"+replies);
             return Result.success(replies);
         } catch (Exception e) {
             e.printStackTrace();
@@ -188,11 +188,12 @@ public class CommentsController {
     }
 
     @GetMapping("/getRoutesComments")
-    public Result<List<Comments>> getRoutesComments(Integer targetId,Integer targetType)
+    public Result<List<CommentsDTO>> getRoutesComments(Integer targetId,Integer targetType)
     {
         try
         {
-            List<Comments> listComments = commentsService.getRoutesComments(targetId,targetType);
+            List<CommentsDTO> listComments = commentsService.getRoutesComments(targetId,targetType);
+            System.out.println("listComments:"+listComments);
             return Result.success(listComments);
         }catch (Exception e)
         {

@@ -2,6 +2,7 @@ package edu.cqie.cqdemo.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import edu.cqie.cqdemo.dto.ScenicsCommentsDTO;
+import edu.cqie.cqdemo.dto.CommentsDTO;
 import edu.cqie.cqdemo.entity.Comments;
 import edu.cqie.cqdemo.entity.Users;
 import edu.cqie.cqdemo.mapper.UserMapper;
@@ -43,23 +44,23 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments>
 
 
     @Override
-    public List<Comments> getRoutesComments(Integer targetId,Integer targetType)
+    public List<CommentsDTO> getRoutesComments(Integer targetId,Integer targetType)
     {
         return commentsMapper.getCommentDetail(targetId,targetType);
     }
 
     @Override
-    public List<Comments> getCommentReplies(Integer commentId, Integer page, Integer size) {
+    public List<CommentsDTO> getCommentReplies(Integer commentId, Integer page, Integer size) {
         return commentsMapper.getCommentReplies(commentId, page, size);
     }
 
     @Override
-    public List<Comments> getCommentRepliesRecursive(Integer commentId) {
+    public List<CommentsDTO> getCommentRepliesRecursive(Integer commentId) {
         // 获取直接回复
-        List<Comments> directReplies = commentsMapper.getDirectReplies(commentId);
+        List<CommentsDTO> directReplies = commentsMapper.getDirectReplies(commentId);
         // 递归获取每个直接回复的子回复
-        for (Comments reply : directReplies) {
-            List<Comments> childReplies = getCommentRepliesRecursive(reply.getId());
+        for (CommentsDTO reply : directReplies) {
+            List<CommentsDTO> childReplies = getCommentRepliesRecursive(reply.getId());
             reply.setReplies(childReplies);
         }
         return directReplies;

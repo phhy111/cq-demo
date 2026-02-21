@@ -1,6 +1,7 @@
 package edu.cqie.cqdemo.mapper;
 
 import edu.cqie.cqdemo.dto.ScenicsCommentsDTO;
+import edu.cqie.cqdemo.dto.CommentsDTO;
 import edu.cqie.cqdemo.entity.Comments;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
@@ -27,7 +28,7 @@ public interface CommentsMapper extends BaseMapper<Comments> {
     boolean insertCommentsInfo(Comments  comment);
 
     //获取相应评论
-    List<Comments> getCommentDetail(Integer targetId,Integer targetType);
+    List<CommentsDTO> getCommentDetail(Integer targetId,Integer targetType);
     
     /**
      * 获取评论的回复列表
@@ -36,14 +37,14 @@ public interface CommentsMapper extends BaseMapper<Comments> {
      * @param size 每页大小
      * @return 回复列表
      */
-    List<Comments> getCommentReplies(Integer commentId, Integer page, Integer size);
+    List<CommentsDTO> getCommentReplies(Integer commentId, Integer page, Integer size);
     
     /**
      * 获取直接回复某个评论的所有子评论
      * @param commentId 评论ID
      * @return 直接回复列表
      */
-    List<Comments> getDirectReplies(Integer commentId);
+    List<CommentsDTO> getDirectReplies(Integer commentId);
 }
 
 

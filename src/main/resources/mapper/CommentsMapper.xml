@@ -17,11 +17,31 @@
         <result property="status" column="status"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
-        <result property="userName" column="user_name"/>
+        <result property="ext1" column="ext1"/>
         <result property="ext2" column="ext2"/>
         <result property="ext3" column="ext3"/>
         <result property="ext4" column="ext4"/>
         <result property="ext5" column="ext5"/>
+    </resultMap>
+
+    <resultMap id="CommentsDTOResult" type="edu.cqie.cqdemo.dto.CommentsDTO">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="targetId" column="target_id"/>
+        <result property="targetType" column="target_type"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="replyToId" column="reply_to_id"/>
+        <result property="content" column="content"/>
+        <result property="images" column="images"/>
+        <result property="rating" column="rating"/>
+        <result property="likeCount" column="like_count"/>
+        <result property="replyCount" column="reply_count"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="username" column="username"/>
+        <result property="avatarUrl" column="avatar_url"/>
+        <result property="replyToUsername" column="reply_to_username"/>
     </resultMap>
 
     <select id="getScenicsCommentsInfo" resultType="edu.cqie.cqdemo.dto.ScenicsCommentsDTO">
@@ -61,16 +81,26 @@
             c.created_at DESC;         -- 组内按评论时间倒序（最新的评论/回复在前）
     </select>
 
-    <select id="getCommentDetail" resultMap="CommentsResult">
+    <select id="getCommentDetail" resultMap="CommentsDTOResult">
         SELECT
             co.*,
-            (SELECT COUNT(*) FROM comments WHERE parent_id = co.id AND status = 1) AS reply_count
-        FROM comments co
-        WHERE co.target_id = #{targetId}
+            u.username,
+            u.avatar_url,
+            (SELECT COUNT(*) FROM comments WHERE parent_id = co.id AND status = 1) AS reply_count,
+            ru.username AS reply_to_username
+        FROM
+            comments co
+        LEFT JOIN
+            users u ON co.user_id = u.id
+        LEFT JOIN
+            users ru ON co.reply_to_id = ru.id
+        WHERE
+            co.target_id = #{targetId}
           AND co.target_type = #{targetType}
           AND co.parent_id = 0
           AND co.status = 1
-        ORDER BY co.like_count DESC
+        ORDER BY
+            co.like_count DESC
     </select>
 
     <!--  插入评论信息  -->
@@ -84,21 +114,43 @@
     </insert>
 
     <!--  获取评论的回复列表  -->
-    <select id="getCommentReplies" resultMap="CommentsResult">
-        SELECT *
-        FROM comments
-        WHERE parent_id = #{commentId}
-          AND status = 1
-        ORDER BY like_count DESC
-            LIMIT #{size} OFFSET ${(page - 1) * size}
+    <select id="getCommentReplies" resultMap="CommentsDTOResult">
+        SELECT
+            c.*,
+            u.username,
+            u.avatar_url,
+            ru.username AS reply_to_username
+        FROM
+            comments c
+        LEFT JOIN
+            users u ON c.user_id = u.id
+        LEFT JOIN
+            users ru ON c.reply_to_id = ru.id
+        WHERE
+            c.parent_id = #{commentId}
+          AND c.status = 1
+        ORDER BY
+            c.like_count DESC
+        LIMIT #{size} OFFSET ${(page - 1) * size}
     </select>
 
     <!--  获取直接回复某个评论的所有子评论  -->
-    <select id="getDirectReplies" resultMap="CommentsResult">
-        SELECT *
-        FROM comments
-        WHERE parent_id = #{commentId}
-          AND status = 1
-        ORDER BY like_count DESC
+    <select id="getDirectReplies" resultMap="CommentsDTOResult">
+        SELECT
+            c.*,
+            u.username,
+            u.avatar_url,
+            ru.username AS reply_to_username
+        FROM
+            comments c
+        LEFT JOIN
+            users u ON c.user_id = u.id
+        LEFT JOIN
+            users ru ON c.reply_to_id = ru.id
+        WHERE
+            c.parent_id = #{commentId}
+          AND c.status = 1
+        ORDER BY
+            c.like_count DESC
     </select>
 </mapper>
