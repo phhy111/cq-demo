@@ -8,10 +8,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import java.util.List;
 
 /**
-* @author
-* @description 针对表【comments(评论表)】的数据库操作Service
-* @createDate 2026-02-03 22:06:59
-*/
+ * @author
+ * @description 针对表【comments(评论表)】的数据库操作Service
+ * @createDate 2026-02-03 22:06:59
+ */
 public interface CommentsService extends IService<Comments> {
     /**
      * 获取景点评论信息
@@ -29,7 +29,7 @@ public interface CommentsService extends IService<Comments> {
     boolean addCommentWithUserInfo(Comments comments);
 
     List<CommentsDTO> getRoutesComments(Integer targetId,Integer targetType);
-    
+
     /**
      * 获取评论的回复列表
      * @param commentId 评论ID
@@ -38,11 +38,18 @@ public interface CommentsService extends IService<Comments> {
      * @return 回复列表
      */
     List<CommentsDTO> getCommentReplies(Integer commentId, Integer page, Integer size);
-    
+
     /**
      * 递归获取评论的所有回复（包括子评论的子评论）
      * @param commentId 评论ID
      * @return 回复树结构
      */
     List<CommentsDTO> getCommentRepliesRecursive(Integer commentId);
+
+    /**
+     * 更新评论的点赞数
+     * @param commentId 评论ID
+     * @param delta 变化量（1为增加，-1为减少）
+     */
+    void updateCommentLikeCount(Integer commentId, int delta);
 }

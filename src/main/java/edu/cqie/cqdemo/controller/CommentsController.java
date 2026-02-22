@@ -4,8 +4,10 @@ import edu.cqie.cqdemo.common.Result;
 import edu.cqie.cqdemo.dto.ScenicsCommentsDTO;
 import edu.cqie.cqdemo.dto.CommentsDTO;
 import edu.cqie.cqdemo.entity.Comments;
+import edu.cqie.cqdemo.entity.Likes;
 import edu.cqie.cqdemo.entity.Users;
 import edu.cqie.cqdemo.service.CommentsService;
+import edu.cqie.cqdemo.service.LikesService;
 import edu.cqie.cqdemo.service.UserService;
 import edu.cqie.cqdemo.util.JwtUtil;
 import edu.cqie.cqdemo.util.OSSOperationUtil;
@@ -13,12 +15,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,10 +37,19 @@ public class CommentsController {
     private JwtUtil jwtUtil;  // 注入 JWT 工具类
 
     @Autowired
+    private LikesService likesService;
+
+    @Autowired
     private OSSOperationUtil ossOperationUtil;
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
+
+    // 用于存储点赞状态查询的同步锁，防止缓存穿透
+    private final ConcurrentHashMap<String, Object> likeLocks = new ConcurrentHashMap<>();
     /**
      * 获取景点评论信息
      * @param id 景点id
@@ -131,7 +145,7 @@ public class CommentsController {
             return Result.error("评论添加失败：" + e.getMessage());
         }
     }
-    
+
     @PostMapping("/replyComment")
     public Result<?> replyComment(@RequestBody Comments comments, HttpServletRequest request) {
         try {
@@ -155,7 +169,7 @@ public class CommentsController {
             return Result.error("回复添加失败：" + e.getMessage());
         }
     }
-    
+
     @GetMapping("/getCommentReplies")
     public Result<List<CommentsDTO>> getCommentReplies(Integer commentId, Integer page, Integer size) {
         try {
@@ -174,7 +188,7 @@ public class CommentsController {
             return Result.error("获取回复失败：" + e.getMessage());
         }
     }
-    
+
     @GetMapping("/getCommentRepliesRecursive")
     public Result<List<CommentsDTO>> getCommentRepliesRecursive(Integer commentId) {
         try {
@@ -201,4 +215,158 @@ public class CommentsController {
         }
 
     }
+
+    @PostMapping("/addLikeComments")
+    public Result addLikeComments(@RequestBody Likes likes){
+        try {
+            // 1. 规范拼接Redis Key
+            String redisKey = "likes:" + likes.getTargetType() + ":" + likes.getTargetId();
+            // 2. 正确调用Redis Set的add方法：opsForSet()获取Set操作对象，再调用add
+            Long isAdded = redisTemplate.opsForSet().add(redisKey, likes.getUserId());
+            // 设置7天过期时间
+            redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+
+            // 3. 根据添加结果返回不同的响应
+            if (isAdded != null && isAdded == 1) {
+                log.info("用户 {} 点赞成功，目标类型：{}，目标ID：{}", likes.getUserId(), likes.getTargetType(), likes.getTargetId());
+                return Result.success("点赞成功");
+            } else {
+                return Result.success("已点赞，无需重复操作");
+            }
+        } catch (Exception e) {
+            // 4. 异常处理，返回错误信息
+            e.printStackTrace();
+            return Result.error("点赞失败：" + e.getMessage());
+        }
+    }
+
+    @PostMapping("/removeLikeComments")
+    public Result removeLikeComments(@RequestBody Likes likes){
+        try {
+            // 1. 规范拼接Redis Key
+            String redisKey = "likes:" + likes.getTargetType() + ":" + likes.getTargetId();
+            // 2. 从Redis Set中移除userId
+            Long isRemoved = redisTemplate.opsForSet().remove(redisKey, likes.getUserId());
+            // 设置7天过期时间
+            redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+
+            // 3. 根据移除结果返回不同的响应
+            if (isRemoved != null && isRemoved == 1) {
+                log.info("用户 {} 取消点赞成功，目标类型：{}，目标ID：{}", likes.getUserId(), likes.getTargetType(), likes.getTargetId());
+                return Result.success("取消点赞成功");
+            } else {
+                return Result.success("未点赞，无需取消操作");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("取消点赞失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 查询用户是否点赞了某个目标
+     * 优先从Redis读取，提高性能
+     */
+    @PostMapping("/checkLikeStatus")
+    public Result checkLikeStatus(@RequestBody Likes likes){
+        try {
+            // 1. 规范拼接Redis Key
+            String redisKey = "likes:" + likes.getTargetType() + ":" + likes.getTargetId();
+            // 2. 检查Redis中是否存在该用户的点赞记录
+            Boolean isLiked = redisTemplate.opsForSet().isMember(redisKey, likes.getUserId());
+
+            if (isLiked != null && isLiked) {
+                return Result.success(true);
+            } else if (isLiked != null && !isLiked) {
+                return Result.success(false);
+            } else {
+                // Redis中不存在，使用同步锁确保只有一个请求打到MySQL
+                String lockKey = "lock:like:" + likes.getTargetType() + ":" + likes.getTargetId() + ":" + likes.getUserId();
+                Object lock = likeLocks.computeIfAbsent(lockKey, k -> new Object());
+
+                synchronized (lock) {
+                    // 再次检查Redis，防止并发情况下已经有其他请求更新了Redis
+                    isLiked = redisTemplate.opsForSet().isMember(redisKey, likes.getUserId());
+                    if (isLiked != null) {
+                        return Result.success(isLiked);
+                    }
+
+                    // Redis中确实不存在，检查MySQL
+                    com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Likes> queryWrapper = new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+                    queryWrapper.eq("user_id", likes.getUserId());
+                    queryWrapper.eq("target_id", likes.getTargetId());
+                    queryWrapper.eq("target_type", likes.getTargetType());
+
+                    Likes existingLike = likesService.getOne(queryWrapper);
+                    boolean mysqlLiked = existingLike != null;
+
+                    // 如果MySQL中存在，同步到Redis
+                    if (mysqlLiked) {
+                        redisTemplate.opsForSet().add(redisKey, likes.getUserId());
+                        redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+                    } else {
+                        // 如果MySQL中不存在，也同步到Redis，设置为false，防止缓存穿透
+                        // 注意：这里不能直接存储false，因为Redis Set只存储存在的元素
+                        // 所以我们不做任何操作，让Redis自然过期
+                    }
+
+                    return Result.success(mysqlLiked);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("查询点赞状态失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取某个目标的点赞数量
+     * 优先从Redis读取，提高性能
+     */
+    @GetMapping("/getLikeCount")
+    public Result getLikeCount(Integer targetType, Long targetId){
+        try {
+            // 1. 规范拼接Redis Key
+            String redisKey = "likes:" + targetType + ":" + targetId;
+            // 2. 从Redis中获取点赞数量
+            Long likeCount = redisTemplate.opsForSet().size(redisKey);
+
+            if (likeCount != null) {
+                // 重置Redis Key的过期时间
+                redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+                return Result.success(likeCount);
+            } else {
+                // Redis中不存在，使用同步锁确保只有一个请求打到MySQL
+                String lockKey = "lock:like:count:" + targetType + ":" + targetId;
+                Object lock = likeLocks.computeIfAbsent(lockKey, k -> new Object());
+
+                synchronized (lock) {
+                    // 再次检查Redis，防止并发情况下已经有其他请求更新了Redis
+                    likeCount = redisTemplate.opsForSet().size(redisKey);
+                    if (likeCount != null) {
+                        redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+                        return Result.success(likeCount);
+                    }
+
+                    // Redis中确实不存在，从MySQL中查询
+                    com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Likes> queryWrapper = new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+                    queryWrapper.eq("target_id", targetId);
+                    queryWrapper.eq("target_type", targetType);
+
+                    long mysqlLikeCount = likesService.count(queryWrapper);
+
+                    // 同步到Redis，设置过期时间
+                    // 注意：这里不需要同步具体的点赞用户，只需要在有用户点赞时Redis会自动更新
+                    // 所以我们只需要重置Redis Key的过期时间即可
+                    redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+
+                    return Result.success(mysqlLikeCount);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("查询点赞数量失败：" + e.getMessage());
+        }
+    }
+
 }
