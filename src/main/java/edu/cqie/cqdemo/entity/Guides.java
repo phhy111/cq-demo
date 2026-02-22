@@ -39,8 +39,8 @@ public class Guides{
     /**
      * 封面图（存储图片URL/路径）
      */
-    @TableField("cover")
-    private String cover;
+    @TableField("cover_img")
+    private String coverImg;
 
     /**
      * 摘要
@@ -111,8 +111,8 @@ public class Guides{
     /**
      * 排序
      */
-    @TableField("sort")
-    private Integer sort;
+    @TableField("sort_order")
+    private Integer sortOrder;
 
     /**
      * 创建时间
@@ -127,7 +127,7 @@ public class Guides{
     private LocalDateTime updateTime;
 
     /**
-     * 预留字段1
+     * 路线ID
      */
     @TableField("routes_id")
     private Integer routesId;

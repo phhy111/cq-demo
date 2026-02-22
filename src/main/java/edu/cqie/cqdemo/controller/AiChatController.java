@@ -70,18 +70,18 @@ public class AiChatController {
             Long userId = loginUser.getId();
             String travelWay =  request.get("travelWay");
             String message = request.get("message");
-            
+
             if (message == null) {
                 return buildErrorSseResponse(400, "message参数不能为空");
             }
             if (travelWay == null) {
                 return buildErrorSseResponse(400, "travelWay参数不能为空");
             }
-            
+
             // 构建Redis键的模式，用于匹配该用户的所有对话
             String pattern = AI_CONVERSATION_KEY_PREFIX + userId + ":*";
             Set<String> conversationKeys = redisTemplate.keys(pattern);
-            
+
             Map<String, Object> targetConversation = null;
             if (conversationKeys != null && !conversationKeys.isEmpty()) {
                 for (String key : conversationKeys) {
@@ -89,33 +89,33 @@ public class AiChatController {
                     if (conversation != null) {
                         String userMessage = (String) conversation.get("userMessage");
                         String storedTravelWay = (String) conversation.get("travelWay");
-                        if (userMessage != null && userMessage.contains(message) && 
-                            (storedTravelWay == null || storedTravelWay.equals(travelWay))) {
+                        if (userMessage != null && userMessage.contains(message) &&
+                                (storedTravelWay == null || storedTravelWay.equals(travelWay))) {
                             targetConversation = conversation;
                             break;
                         }
                     }
                 }
             }
-            
+
             if (targetConversation == null) {
                 return buildErrorSseResponse(404, "未找到对应的历史对话");
             }
-            
+
             String aiMessage = (String) targetConversation.get("aiMessage");
             if (aiMessage == null) {
                 return buildErrorSseResponse(500, "历史对话数据不完整");
             }
-            
+
             // 构建SSE响应
             Map<String, Object> doneData = new HashMap<>();
             doneData.put("code", 200);
             doneData.put("msg", "历史对话加载成功");
             doneData.put("data", aiMessage);
-            
+
             ServerSentEvent<String> sseEvent = serializeToSse("ai-done", doneData);
             return Flux.just(sseEvent);
-            
+
         } catch (IllegalAccessException e) {
             log.error("认证失败", e);
             return buildErrorSseResponse(401, e.getMessage());
@@ -130,15 +130,15 @@ public class AiChatController {
         try {
             LoginUser loginUser = this.getLoginUser();
             Long userId = loginUser.getId();
-            
+
             // 构建Redis键的模式，用于匹配该用户的所有对话
             String pattern = AI_CONVERSATION_KEY_PREFIX + userId + ":*";
-            
+
             // 使用Redis的keys命令获取匹配的所有键
             Set<String> conversationKeys = redisTemplate.keys(pattern);
-            
+
             List<Map<String, Object>> conversationHistory = new ArrayList<>();
-            
+
             if (conversationKeys != null && !conversationKeys.isEmpty()) {
                 for (String key : conversationKeys) {
                     Map<String, Object> conversation = (Map<String, Object>) redisTemplate.opsForValue().get(key);
@@ -153,13 +153,13 @@ public class AiChatController {
                     return t2.compareTo(t1);
                 });
             }
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("code", 200);
             response.put("msg", "获取对话历史成功");
             response.put("data", conversationHistory);
             response.put("expireTime", "24小时");
-            
+
             log.info("用户 {} 获取对话历史，共 {} 条记录", userId, conversationHistory.size());
             System.out.println(response);
             return response;
@@ -184,21 +184,21 @@ public class AiChatController {
         try {
             LoginUser loginUser = this.getLoginUser();
             Long userId = loginUser.getId();
-            
+
             // 从请求体中获取AiDTO和AiReport
             Map<String, Object> aiDTOMap = (Map<String, Object>) request.get("aiDTO");
             Map<String, Object> aiReportMap = (Map<String, Object>) request.get("aiReport");
-            
+
             // 打印日志，查看前端发送的实际数据
             log.info("前端发送的aiDTOMap: {}", aiDTOMap);
             log.info("前端发送的aiReportMap: {}", aiReportMap);
             log.info("aiDTOMap中的travelWay: {}", aiDTOMap != null ? aiDTOMap.get("travelWay") : "null");
             log.info("aiReportMap中的travelWay: {}", aiReportMap != null ? aiReportMap.get("travelWay") : "null");
-            
+
             if (aiDTOMap == null || aiReportMap == null) {
                 return Result.error("请求参数不能为空");
             }
-            
+
             // 创建Routes对象
             Routes routes = new Routes();
             routes.setUserId(userId);
@@ -247,9 +247,9 @@ public class AiChatController {
             guides.setRoutesId(routes.getId());
 
             guidesService.save(guides);
-            
+
             log.info("用户 {} 保存了对话消息，Routes ID: {}, Guides ID: {}", userId, routes.getId(), guides.getId());
-            
+
             // 返回保存成功的结果，包含生成的routesId值
             Map<String, Object> result = new HashMap<>();
             result.put("routesId", routes.getId());
@@ -270,18 +270,18 @@ public class AiChatController {
         try {
             LoginUser loginUser = this.getLoginUser();
             Long userId = loginUser.getId();
-            
+
             if (timestamp == null) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("code", 400);
                 errorResponse.put("msg", "timestamp参数不能为空");
                 return errorResponse;
             }
-            
+
             // 构建Redis键的模式，用于匹配该用户的所有对话
             String pattern = AI_CONVERSATION_KEY_PREFIX + userId + ":*";
             Set<String> conversationKeys = redisTemplate.keys(pattern);
-            
+
             boolean deleted = false;
             if (conversationKeys != null && !conversationKeys.isEmpty()) {
                 for (String key : conversationKeys) {
@@ -298,7 +298,7 @@ public class AiChatController {
                     }
                 }
             }
-            
+
             Map<String, Object> response = new HashMap<>();
             if (deleted) {
                 response.put("code", 200);
@@ -307,7 +307,7 @@ public class AiChatController {
                 response.put("code", 404);
                 response.put("msg", "未找到对应的历史对话记录");
             }
-            
+
             return response;
         } catch (IllegalAccessException e) {
             log.error("认证失败", e);
@@ -345,7 +345,7 @@ public class AiChatController {
             } catch (NumberFormatException e) {
                 return Result.error("routesId参数必须是有效的数字");
             }
-            
+
             // 先检查该routesId是否属于当前用户
             Routes routes = routesService.getById(routesId);
             if (routes == null) {
@@ -354,20 +354,20 @@ public class AiChatController {
             if (!routes.getUserId().equals(userId)) {
                 return Result.error("无权删除其他用户的路线信息");
             }
-            
+
             // 先删除与该routesId关联的Guides信息
             QueryWrapper<Guides> guidesQueryWrapper = new QueryWrapper<>();
             guidesQueryWrapper.eq("routes_id", routesId);
             boolean guidesDeleted = guidesService.remove(guidesQueryWrapper);
-            
+
             if (!guidesDeleted) {
                 log.warn("删除Guides失败，Routes ID: {}", routesId);
                 // 继续执行，因为Guides可能不存在
             }
-            
+
             // 再删除Routes信息
             boolean routesDeleted = routesService.removeById(routesId);
-            
+
             if (routesDeleted) {
                 log.info("用户 {} 删除了对话消息，Routes ID: {}", userId, routesId);
                 return Result.success("删除成功");
@@ -429,7 +429,7 @@ public class AiChatController {
                         try {
                             // 调用AI服务生成旅行计划
                             AiReport report = aiService.generateTravelPlan(userId, userMessage);
-                            
+
                             // 将AI生成的报告转换为JSON字符串
                             String fullJson = OBJECT_MAPPER.writeValueAsString(report);
                             log.debug("结构化AI响应生成成功，JSON长度：{}", fullJson.length());

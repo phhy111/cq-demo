@@ -8,6 +8,7 @@ import edu.cqie.cqdemo.entity.Users;
 
 import edu.cqie.cqdemo.mapper.UserMapper;
 import edu.cqie.cqdemo.service.impl.UserDetailsServiceImpl;
+import edu.cqie.cqdemo.util.OSSOperationUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,11 +27,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import jakarta.mail.internet.MimeMessage;
 
@@ -56,6 +55,7 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final StringRedisTemplate stringRedisTemplate;
     private final JavaMailSender mailSender;
+    private final OSSOperationUtil ossOperationUtil;
 
 
     /**
@@ -157,35 +157,17 @@ public class AuthController {
                 return Result.error("验证码错误或已过期");
             }
 
-            // 4. 处理头像文件（逻辑保留，路径不变）
+            // 4. 处理头像文件（修改为使用OSS上传到user_avatar/目录）
             String avatarUrl = null;
             if (registerDTO.getAvatar() != null && !registerDTO.getAvatar().isEmpty()) {
-                // 4.1 获取src/main/java/edu/cqie/cqdemo/img/userimg的绝对路径
-                String basePath = this.getClass().getClassLoader().getResource("").getPath();
-                String targetDirPath = basePath.replace("target/classes/", "src/main/java/")
-                        + "edu/cqie/cqdemo/img/userimg/";
-
-                // 4.2 创建目录
-                File uploadDir = new File(targetDirPath);
-                if (!uploadDir.exists() && !uploadDir.mkdirs()) {
-                    log.error("创建头像目录失败：{}", targetDirPath);
-                    return Result.error("头像目录创建失败");
+                try {
+                    // 使用OSS上传头像到user_avatar/目录
+                    String imageUrl = ossOperationUtil.upload(registerDTO.getAvatar(), "user_avatar/");
+                    avatarUrl = imageUrl;
+                } catch (Exception e) {
+                    log.error("头像上传失败：", e);
+                    return Result.error("头像上传失败：" + e.getMessage());
                 }
-
-                // 4.3 生成唯一文件名
-                String originalFilename = registerDTO.getAvatar().getOriginalFilename();
-                if (originalFilename == null || originalFilename.lastIndexOf(".") == -1) {
-                    return Result.error("无效的头像文件（无后缀名）");
-                }
-                String suffix = originalFilename.substring(originalFilename.lastIndexOf("."));
-                String newFileName = UUID.randomUUID() + suffix;
-
-                // 4.4 保存文件
-                File destFile = new File(uploadDir, newFileName);
-                registerDTO.getAvatar().transferTo(destFile);
-
-                // 4.5 拼接访问URL
-                avatarUrl = "/img/userimg/" + newFileName;
             }
 
             Users sysUser = new Users();
@@ -223,9 +205,6 @@ public class AuthController {
             stringRedisTemplate.delete(redisKey);
 
             return Result.success("注册成功");
-        } catch (IOException e) {
-            log.error("头像保存失败：", e);
-            return Result.error("头像上传失败（文件IO异常）");
         } catch (Exception e) {
             log.error("注册失败：", e);
             return Result.error("注册失败：" + e.getMessage());

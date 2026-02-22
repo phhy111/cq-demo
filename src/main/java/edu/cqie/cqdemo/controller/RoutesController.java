@@ -2,9 +2,11 @@ package edu.cqie.cqdemo.controller;
 
 import edu.cqie.cqdemo.common.Result;
 import edu.cqie.cqdemo.entity.Collections;
+import edu.cqie.cqdemo.entity.Guides;
 import edu.cqie.cqdemo.entity.Likes;
 import edu.cqie.cqdemo.entity.Routes;
 import edu.cqie.cqdemo.service.CollectionsService;
+import edu.cqie.cqdemo.service.GuidesService;
 import edu.cqie.cqdemo.service.LikesService;
 import edu.cqie.cqdemo.service.RoutesService;
 import lombok.extern.slf4j.Slf4j;
@@ -12,11 +14,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import edu.cqie.cqdemo.entity.LoginUser;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -32,12 +38,17 @@ public class RoutesController {
     // 添加本地锁对象，用于防止缓存击穿时的并发问题
     private final Object syncLock = new Object();
 
+    // 用于点赞状态查询的并发锁映射
+    private final Map<String, Object> likeLocks = new ConcurrentHashMap<>();
+
     @Autowired
     private RoutesService routesService;
     @Autowired
     private LikesService likesService;
     @Autowired
     private CollectionsService collectionsService;
+    @Autowired
+    private GuidesService guidesService;
     @Autowired
     private RedisTemplate redisTemplate;
 
@@ -99,7 +110,7 @@ public class RoutesController {
                     String likeRedisKey = "likes:3:" + route.getId();
                     Long likeCount = redisTemplate.opsForSet().size(likeRedisKey);
                     route.setLikeCount(likeCount != null ? likeCount.intValue() : 0);
-                    
+
                     // 获取收藏数：从Redis的collections:3:{routeId}集合中获取元素数量
                     String collectRedisKey = "collections:3:" + route.getId();
                     Long collectCount = redisTemplate.opsForSet().size(collectRedisKey);
@@ -109,7 +120,7 @@ public class RoutesController {
                 // Redis读取失败，从MySQL同步数据
                 e.printStackTrace();
                 System.out.println("Redis读取失败，从MySQL同步数据：" + e.getMessage());
-                
+
                 // 使用本地锁确保只有一个线程执行同步操作
                 synchronized (syncLock) {
                     // 双重检查：再次尝试从Redis读取，避免重复同步
@@ -132,21 +143,21 @@ public class RoutesController {
                         needSync = true;
                         ex.printStackTrace();
                     }
-                    
+
                     // 如果仍然需要同步，执行同步操作
                     if (needSync) {
                         // 从MySQL同步数据到Redis
                         syncDataFromMysqlToRedis();
                     }
                 }
-                
+
                 // 重新从Redis读取数据
                 for (Routes route : routesList) {
                     try {
                         String likeRedisKey = "likes:3:" + route.getId();
                         Long likeCount = redisTemplate.opsForSet().size(likeRedisKey);
                         route.setLikeCount(likeCount != null ? likeCount.intValue() : 0);
-                        
+
                         String collectRedisKey = "collections:3:" + route.getId();
                         Long collectCount = redisTemplate.opsForSet().size(collectRedisKey);
                         route.setCollectCount(collectCount != null ? collectCount.intValue() : 0);
@@ -172,7 +183,7 @@ public class RoutesController {
                 redisTemplate.opsForSet().add(redisKey, like.getUserId());
                 redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
             }
-            
+
             // 2. 同步收藏数据
             List<Collections> allCollections = collectionsService.list(new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Collections>().eq("target_type", 3));
             for (Collections collection : allCollections) {
@@ -180,7 +191,7 @@ public class RoutesController {
                 redisTemplate.opsForSet().add(redisKey, collection.getUserId());
                 redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
             }
-            
+
             System.out.println("从MySQL同步数据到Redis成功");
         } catch (Exception e) {
             e.printStackTrace();
@@ -198,10 +209,64 @@ public class RoutesController {
         }
     }
 
+    /**
+     * 获取路线相关的攻略列表
+     * 优先从Redis读取，提高性能
+     */
+    @GetMapping("/getRouteGuides")
+    public Result getRouteGuides(Integer routeId) {
+        try {
+            // 1. 规范拼接Redis Key
+            String redisKey = "guides:route:" + routeId;
+
+            // 2. 尝试从Redis读取
+            List<Guides> guidesList = (List<Guides>) redisTemplate.opsForValue().get(redisKey);
+
+            if (guidesList != null) {
+                // 重置Redis Key的过期时间
+                redisTemplate.expire(redisKey, 1, TimeUnit.MINUTES);
+                return Result.success(guidesList);
+            } else {
+                // Redis中不存在，使用同步锁确保只有一个请求打到MySQL
+                String lockKey = "lock:guides:route:" + routeId;
+                Object lock = likeLocks.computeIfAbsent(lockKey, k -> new Object());
+
+                synchronized (lock) {
+                    // 再次检查Redis，防止并发情况下已经有其他请求更新了Redis
+                    guidesList = (List<Guides>) redisTemplate.opsForValue().get(redisKey);
+                    if (guidesList != null) {
+                        redisTemplate.expire(redisKey, 1, TimeUnit.MINUTES);
+                        return Result.success(guidesList);
+                    }
+
+                    // Redis中确实不存在，从MySQL中查询
+                    guidesList = guidesService.getGuidesByRouteId(routeId);
+
+                    // 同步到Redis，设置1分钟过期时间
+                    redisTemplate.opsForValue().set(redisKey, guidesList, 1, TimeUnit.MINUTES);
+
+                    return Result.success(guidesList);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("查询路线攻略失败：" + e.getMessage());
+        }
+    }
+
 
     @PostMapping("/addLikeRoutes")
     public Result addLikeRoutes(@RequestBody Likes likes){
         try {
+            // 获取当前登录用户信息
+            LoginUser loginUser = getLoginUser();
+            Long currentUserId = loginUser.getId();
+
+            // 验证请求中的用户ID是否与当前登录用户一致
+            if (!currentUserId.equals(likes.getUserId())) {
+                return Result.error("无权为其他用户点赞");
+            }
+
             // 1. 规范拼接Redis Key
             String redisKey = "likes:" + likes.getTargetType() + ":" + likes.getTargetId();
             // 2. 正确调用Redis Set的add方法：opsForSet()获取Set操作对象，再调用add
@@ -215,6 +280,8 @@ public class RoutesController {
             } else {
                 return Result.success("已点赞，无需重复操作");
             }
+        } catch (IllegalAccessException e) {
+            return Result.error(e.getMessage());
         } catch (Exception e) {
             // 4. 异常处理，返回错误信息
             e.printStackTrace();
@@ -225,6 +292,15 @@ public class RoutesController {
     @PostMapping("/removeLikeRoutes")
     public Result removeLikeRoutes(@RequestBody Likes likes){
         try {
+            // 获取当前登录用户信息
+            LoginUser loginUser = getLoginUser();
+            Long currentUserId = loginUser.getId();
+
+            // 验证请求中的用户ID是否与当前登录用户一致
+            if (!currentUserId.equals(likes.getUserId())) {
+                return Result.error("无权为其他用户取消点赞");
+            }
+
             // 1. 规范拼接Redis Key
             String redisKey = "likes:" + likes.getTargetType() + ":" + likes.getTargetId();
             // 2. 从Redis Set中移除userId
@@ -241,37 +317,182 @@ public class RoutesController {
                 queryWrapper.eq("user_id", likes.getUserId());
                 queryWrapper.eq("target_id", likes.getTargetId());
                 queryWrapper.eq("target_type", likes.getTargetType());
-                
+
                 // 执行删除操作
                 boolean deleted = likesService.remove(queryWrapper);
                 log.info("从MySQL删除点赞记录：" + (deleted ? "成功" : "失败"));
-                
+
                 return Result.success("取消点赞成功");
             } else {
                 return Result.success("未点赞，无需取消操作");
             }
+        } catch (IllegalAccessException e) {
+            return Result.error(e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error("取消点赞失败：" + e.getMessage());
         }
     }
 
+    /**
+     * 获取当前登录用户信息
+     */
+    private LoginUser getLoginUser() throws IllegalAccessException {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (!(principal instanceof LoginUser)) {
+            throw new IllegalAccessException("用户未登录或令牌无效");
+        }
+        return (LoginUser) principal;
+    }
+
+    /**
+     * 查询用户是否点赞了某个路线
+     * 优先从Redis读取，提高性能
+     */
+    @PostMapping("/checkLikeStatus")
+    public Result checkLikeStatus(@RequestBody Likes likes){
+        try {
+            // 获取当前登录用户信息
+            LoginUser loginUser = getLoginUser();
+            Long currentUserId = loginUser.getId();
+
+            // 验证请求中的用户ID是否与当前登录用户一致
+            if (!currentUserId.equals(likes.getUserId())) {
+                return Result.error("无权查询其他用户的点赞状态");
+            }
+
+            // 1. 规范拼接Redis Key
+            String redisKey = "likes:" + likes.getTargetType() + ":" + likes.getTargetId();
+            // 2. 检查Redis中是否存在该用户的点赞记录
+            Boolean isLiked = redisTemplate.opsForSet().isMember(redisKey, likes.getUserId());
+
+            if (isLiked != null && isLiked) {
+                return Result.success(true);
+            } else if (isLiked != null && !isLiked) {
+                return Result.success(false);
+            } else {
+                // Redis中不存在，使用同步锁确保只有一个请求打到MySQL
+                String lockKey = "lock:like:" + likes.getTargetType() + ":" + likes.getTargetId() + ":" + likes.getUserId();
+                Object lock = likeLocks.computeIfAbsent(lockKey, k -> new Object());
+
+                synchronized (lock) {
+                    // 再次检查Redis，防止并发情况下已经有其他请求更新了Redis
+                    isLiked = redisTemplate.opsForSet().isMember(redisKey, likes.getUserId());
+                    if (isLiked != null) {
+                        return Result.success(isLiked);
+                    }
+
+                    // Redis中确实不存在，检查MySQL
+                    com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Likes> queryWrapper = new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+                    queryWrapper.eq("user_id", likes.getUserId());
+                    queryWrapper.eq("target_id", likes.getTargetId());
+                    queryWrapper.eq("target_type", likes.getTargetType());
+
+                    Likes existingLike = likesService.getOne(queryWrapper);
+                    boolean mysqlLiked = existingLike != null;
+
+                    // 如果MySQL中存在，同步到Redis
+                    if (mysqlLiked) {
+                        redisTemplate.opsForSet().add(redisKey, likes.getUserId());
+                        redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+                    } else {
+                        // 如果MySQL中不存在，也同步到Redis，设置为false，防止缓存穿透
+                        // 注意：这里不能直接存储false，因为Redis Set只存储存在的元素
+                        // 所以我们不做任何操作，让Redis自然过期
+                    }
+
+                    return Result.success(mysqlLiked);
+                }
+            }
+        } catch (IllegalAccessException e) {
+            return Result.error(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("查询点赞状态失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取某个路线的点赞数量
+     * 优先从Redis读取，提高性能
+     */
+    @GetMapping("/getLikeCount")
+    public Result getLikeCount(Integer targetType, Long targetId){
+        try {
+            // 1. 规范拼接Redis Key
+            String redisKey = "likes:" + targetType + ":" + targetId;
+            // 2. 从Redis中获取点赞数量
+            Long likeCount = redisTemplate.opsForSet().size(redisKey);
+
+            if (likeCount != null) {
+                // 重置Redis Key的过期时间
+                redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+                return Result.success(likeCount);
+            } else {
+                // Redis中不存在，使用同步锁确保只有一个请求打到MySQL
+                String lockKey = "lock:like:count:" + targetType + ":" + targetId;
+                Object lock = likeLocks.computeIfAbsent(lockKey, k -> new Object());
+
+                synchronized (lock) {
+                    // 再次检查Redis，防止并发情况下已经有其他请求更新了Redis
+                    likeCount = redisTemplate.opsForSet().size(redisKey);
+                    if (likeCount != null) {
+                        redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+                        return Result.success(likeCount);
+                    }
+
+                    // Redis中确实不存在，从MySQL中查询
+                    com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Likes> queryWrapper = new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+                    queryWrapper.eq("target_id", targetId);
+                    queryWrapper.eq("target_type", targetType);
+
+                    // 查询具体的点赞记录
+                    List<Likes> likesList = likesService.list(queryWrapper);
+                    long mysqlLikeCount = likesList.size();
+
+                    // 同步到Redis，将具体的点赞用户ID添加到集合中
+                    for (Likes like : likesList) {
+                        redisTemplate.opsForSet().add(redisKey, like.getUserId());
+                    }
+                    // 设置过期时间
+                    redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+
+                    return Result.success(mysqlLikeCount);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("查询点赞数量失败：" + e.getMessage());
+        }
+    }
+
     @PostMapping("/addCollections")
     public Result addLikeRoutes(@RequestBody Collections collections){
         try {
+            // 获取当前登录用户信息
+            LoginUser loginUser = getLoginUser();
+            Long currentUserId = loginUser.getId();
+
+            // 验证请求中的用户ID是否与当前登录用户一致
+            if (!currentUserId.equals(collections.getUserId())) {
+                return Result.error("无权为其他用户添加收藏");
+            }
+
             // 1. 规范拼接Redis Key
             String redisKey = "collections:" + collections.getTargetType() + ":" + collections.getTargetId();
             // 2. 正确调用Redis Set的add方法：opsForSet()获取Set操作对象，再调用add
             Long isAdded = redisTemplate.opsForSet().add(redisKey, collections.getUserId());
             // 设置7天过期时间
             redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
-            
+
             // 3. 根据添加结果返回不同的响应
             if (isAdded != null && isAdded == 1) {
                 return Result.success("收藏成功");
             } else {
                 return Result.success("已收藏，无需重复操作");
             }
+        } catch (IllegalAccessException e) {
+            return Result.error(e.getMessage());
         } catch (Exception e) {
             // 4. 异常处理，返回错误信息
             e.printStackTrace();
@@ -282,6 +503,15 @@ public class RoutesController {
     @PostMapping("/removeCollections")
     public Result removeLikeRoutes(@RequestBody Collections collections){
         try {
+            // 获取当前登录用户信息
+            LoginUser loginUser = getLoginUser();
+            Long currentUserId = loginUser.getId();
+
+            // 验证请求中的用户ID是否与当前登录用户一致
+            if (!currentUserId.equals(collections.getUserId())) {
+                return Result.error("无权为其他用户取消收藏");
+            }
+
             // 1. 规范拼接Redis Key
             String redisKey = "collections:" + collections.getTargetType() + ":" + collections.getTargetId();
             // 2. 从Redis Set中移除userId
@@ -307,6 +537,8 @@ public class RoutesController {
             } else {
                 return Result.success("未收藏，无需取消操作");
             }
+        } catch (IllegalAccessException e) {
+            return Result.error(e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error("取消收藏失败：" + e.getMessage());
@@ -331,7 +563,7 @@ public class RoutesController {
                     if (parts.length == 3) {
                         int targetType = Integer.parseInt(parts[1]);
                         Long targetId = Long.parseLong(parts[2]);
-                        
+
                         // 获取该key对应的所有userId
                         Set<Object> userIds = redisTemplate.opsForSet().members(key);
                         if (userIds != null && !userIds.isEmpty()) {
@@ -344,10 +576,10 @@ public class RoutesController {
                                 queryWrapper.eq("user_id", userId);
                                 queryWrapper.eq("target_id", targetId);
                                 queryWrapper.eq("target_type", targetType);
-                                
+
                                 // 执行查询
                                 Likes existingLike = likesService.getOne(queryWrapper);
-                                
+
                                 // 如果不存在，则插入
                                 if (existingLike == null) {
                                     Likes like = new Likes();
@@ -355,7 +587,7 @@ public class RoutesController {
                                     like.setTargetId(targetId);
                                     like.setTargetType(targetType);
                                     like.setCreatedAt(new Date());
-                                    
+
                                     // 插入到MySQL
                                     likesService.save(like);
                                     System.out.println("新增点赞记录：userId=" + userId + ", targetId=" + targetId + ", targetType=" + targetType);
@@ -367,7 +599,7 @@ public class RoutesController {
                     }
                 }
             }
-            
+
             // 处理取消点赞的情况：删除MySQL中存在但Redis中不存在的点赞记录
             // 获取MySQL中所有点赞记录
             List<Likes> allLikesInMySQL = likesService.list();
@@ -381,7 +613,7 @@ public class RoutesController {
                     System.out.println("从MySQL删除点赞记录：userId=" + like.getUserId() + ", targetId=" + like.getTargetId() + ", targetType=" + like.getTargetType());
                 }
             }
-            
+
             System.out.println("Redis点赞数据同步到MySQL成功");
         } catch (Exception e) {
             e.printStackTrace();
@@ -401,7 +633,7 @@ public class RoutesController {
                     if (parts.length == 3) {
                         int targetType = Integer.parseInt(parts[1]);
                         Long targetId = Long.parseLong(parts[2]);
-                        
+
                         // 获取该key对应的所有userId
                         Set<Object> userIds = redisTemplate.opsForSet().members(key);
                         if (userIds != null && !userIds.isEmpty()) {
@@ -414,10 +646,10 @@ public class RoutesController {
                                 queryWrapper.eq("user_id", userId);
                                 queryWrapper.eq("target_id", targetId);
                                 queryWrapper.eq("target_type", targetType);
-                                
+
                                 // 执行查询
                                 Collections existingCollection = collectionsService.getOne(queryWrapper);
-                                
+
                                 // 如果不存在，则插入
                                 if (existingCollection == null) {
                                     Collections collection = new Collections();
@@ -425,7 +657,7 @@ public class RoutesController {
                                     collection.setTargetId(targetId);
                                     collection.setTargetType(targetType);
                                     collection.setCreatedAt(new Date());
-                                    
+
                                     // 插入到MySQL
                                     collectionsService.save(collection);
                                     System.out.println("新增收藏记录：userId=" + userId + ", targetId=" + targetId + ", targetType=" + targetType);
@@ -437,7 +669,7 @@ public class RoutesController {
                     }
                 }
             }
-            
+
             // 处理取消收藏的情况：删除MySQL中存在但Redis中不存在的收藏记录
             // 获取MySQL中所有收藏记录
             List<Collections> allCollectionsInMySQL = collectionsService.list();
@@ -451,7 +683,7 @@ public class RoutesController {
                     System.out.println("从MySQL删除收藏记录：userId=" + collection.getUserId() + ", targetId=" + collection.getTargetId() + ", targetType=" + collection.getTargetType());
                 }
             }
-            
+
             System.out.println("Redis收藏数据同步到MySQL成功");
         } catch (Exception e) {
             e.printStackTrace();

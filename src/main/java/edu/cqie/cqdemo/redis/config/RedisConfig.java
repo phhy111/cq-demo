@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -37,6 +38,8 @@ public class RedisConfig {
 
         // 1. 配置ObjectMapper（序列化规则不变，开启全字段+类型信息）
         ObjectMapper om = new ObjectMapper();
+        // 注册JavaTimeModule以支持Java 8日期时间类型
+        om.registerModule(new JavaTimeModule());
         // 开启所有字段（包括私有）的序列化
         om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
         // 开启类型信息，反序列化时能正确识别AiDTO对象（避免转成LinkedHashMap）

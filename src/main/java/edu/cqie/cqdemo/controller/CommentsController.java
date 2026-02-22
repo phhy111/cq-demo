@@ -17,9 +17,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import edu.cqie.cqdemo.entity.LoginUser;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,6 +52,18 @@ public class CommentsController {
 
     // 用于存储点赞状态查询的同步锁，防止缓存穿透
     private final ConcurrentHashMap<String, Object> likeLocks = new ConcurrentHashMap<>();
+
+    /**
+     * 获取当前登录用户信息
+     */
+    private LoginUser getLoginUser() throws IllegalAccessException {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (!(principal instanceof LoginUser)) {
+            throw new IllegalAccessException("用户未登录或令牌无效");
+        }
+        return (LoginUser) principal;
+    }
+
     /**
      * 获取景点评论信息
      * @param id 景点id
@@ -216,9 +230,33 @@ public class CommentsController {
 
     }
 
+    @GetMapping("/getGuidesComments")
+    public Result<List<CommentsDTO>> getGuidesComments(Integer targetId,Integer targetType)
+    {
+        try
+        {
+            List<CommentsDTO> listComments = commentsService.getRoutesComments(targetId,targetType);
+            System.out.println("listComments:"+listComments);
+            return Result.success(listComments);
+        }catch (Exception e)
+        {
+            return Result.error("获取攻略评论失败" + e.getMessage());
+        }
+
+    }
+
     @PostMapping("/addLikeComments")
     public Result addLikeComments(@RequestBody Likes likes){
         try {
+            // 获取当前登录用户信息
+            LoginUser loginUser = getLoginUser();
+            Long currentUserId = loginUser.getId();
+
+            // 验证请求中的用户ID是否与当前登录用户一致
+            if (!currentUserId.equals(likes.getUserId())) {
+                return Result.error("无权为其他用户点赞");
+            }
+
             // 1. 规范拼接Redis Key
             String redisKey = "likes:" + likes.getTargetType() + ":" + likes.getTargetId();
             // 2. 正确调用Redis Set的add方法：opsForSet()获取Set操作对象，再调用add
@@ -233,6 +271,8 @@ public class CommentsController {
             } else {
                 return Result.success("已点赞，无需重复操作");
             }
+        } catch (IllegalAccessException e) {
+            return Result.error(e.getMessage());
         } catch (Exception e) {
             // 4. 异常处理，返回错误信息
             e.printStackTrace();
@@ -243,6 +283,15 @@ public class CommentsController {
     @PostMapping("/removeLikeComments")
     public Result removeLikeComments(@RequestBody Likes likes){
         try {
+            // 获取当前登录用户信息
+            LoginUser loginUser = getLoginUser();
+            Long currentUserId = loginUser.getId();
+
+            // 验证请求中的用户ID是否与当前登录用户一致
+            if (!currentUserId.equals(likes.getUserId())) {
+                return Result.error("无权为其他用户取消点赞");
+            }
+
             // 1. 规范拼接Redis Key
             String redisKey = "likes:" + likes.getTargetType() + ":" + likes.getTargetId();
             // 2. 从Redis Set中移除userId
@@ -257,6 +306,8 @@ public class CommentsController {
             } else {
                 return Result.success("未点赞，无需取消操作");
             }
+        } catch (IllegalAccessException e) {
+            return Result.error(e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error("取消点赞失败：" + e.getMessage());
@@ -270,6 +321,15 @@ public class CommentsController {
     @PostMapping("/checkLikeStatus")
     public Result checkLikeStatus(@RequestBody Likes likes){
         try {
+            // 获取当前登录用户信息
+            LoginUser loginUser = getLoginUser();
+            Long currentUserId = loginUser.getId();
+
+            // 验证请求中的用户ID是否与当前登录用户一致
+            if (!currentUserId.equals(likes.getUserId())) {
+                return Result.error("无权查询其他用户的点赞状态");
+            }
+
             // 1. 规范拼接Redis Key
             String redisKey = "likes:" + likes.getTargetType() + ":" + likes.getTargetId();
             // 2. 检查Redis中是否存在该用户的点赞记录
@@ -313,6 +373,8 @@ public class CommentsController {
                     return Result.success(mysqlLiked);
                 }
             }
+        } catch (IllegalAccessException e) {
+            return Result.error(e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error("查询点赞状态失败：" + e.getMessage());
@@ -353,11 +415,15 @@ public class CommentsController {
                     queryWrapper.eq("target_id", targetId);
                     queryWrapper.eq("target_type", targetType);
 
-                    long mysqlLikeCount = likesService.count(queryWrapper);
+                    // 查询具体的点赞记录
+                    List<Likes> likesList = likesService.list(queryWrapper);
+                    long mysqlLikeCount = likesList.size();
 
-                    // 同步到Redis，设置过期时间
-                    // 注意：这里不需要同步具体的点赞用户，只需要在有用户点赞时Redis会自动更新
-                    // 所以我们只需要重置Redis Key的过期时间即可
+                    // 同步到Redis，将具体的点赞用户ID添加到集合中
+                    for (Likes like : likesList) {
+                        redisTemplate.opsForSet().add(redisKey, like.getUserId());
+                    }
+                    // 设置过期时间
                     redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
 
                     return Result.success(mysqlLikeCount);

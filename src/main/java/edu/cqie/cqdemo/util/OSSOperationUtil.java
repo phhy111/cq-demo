@@ -72,11 +72,12 @@ public class OSSOperationUtil {
     }
 
     /**
-     * 上传评论图片到阿里云 OSS
+     * 上传图片到阿里云 OSS
      * @param file 前端上传的文件
+     * @param directory 存储目录
      * @return 阿里云返回的图片 URL
      */
-    public String upload(MultipartFile file) {
+    public String upload(MultipartFile file, String directory) {
         try {
             // 1. 获取文件输入流
             InputStream inputStream = file.getInputStream();
@@ -86,8 +87,8 @@ public class OSSOperationUtil {
             String suffix = originalFilename.substring(originalFilename.lastIndexOf("."));
             String fileName = UUID.randomUUID().toString() + suffix;
 
-            // 3. 构建 OSS 存储路径（比如 cq_list/comment/202602/xxx.png）
-            String objectName = "comments_img/" + fileName;
+            // 3. 构建 OSS 存储路径
+            String objectName = directory + fileName;
 
             // 4. 创建 OSS 客户端并上传文件
             OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
@@ -105,6 +106,15 @@ public class OSSOperationUtil {
             log.error("图片上传阿里云失败", e);
             throw new RuntimeException("图片上传失败");
         }
+    }
+
+    /**
+     * 上传评论图片到阿里云 OSS（默认目录）
+     * @param file 前端上传的文件
+     * @return 阿里云返回的图片 URL
+     */
+    public String upload(MultipartFile file) {
+        return upload(file, "comments_img/");
     }
 
 
