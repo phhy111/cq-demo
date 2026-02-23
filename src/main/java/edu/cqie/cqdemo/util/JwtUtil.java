@@ -50,6 +50,13 @@ public class JwtUtil {
     }
 
     /**
+     * 【新增】从Token中获取用户角色
+     */
+    public Integer getRoleFromToken(String token) {
+        return parseToken(token).get("role", Integer.class);
+    }
+
+    /**
      * 验证Token有效性（用户名匹配 + 未过期）
      */
     public boolean validateToken(String token, UserDetails userDetails) {
@@ -82,7 +89,7 @@ public class JwtUtil {
     }
 
     /**
-     * 【核心修复】适配自定义LoginUser，生成含【用户ID+用户名】的Token
+     * 【核心修复】适配自定义LoginUser，生成含【用户ID+用户名+角色】的Token
      * 入参：UserDetails（实际是LoginUser），内部强转获取ID和用户名
      * 调用：登录接口直接传userDetails即可，无需额外参数
      */
@@ -90,12 +97,14 @@ public class JwtUtil {
         LoginUser loginUser = (LoginUser) userDetails;
         String username = loginUser.getUsername();
         Long userId = loginUser.getId();
+        Integer role = loginUser.getRole();
 
         // 生成JWT Token，写入用户名和ID
         SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
         return Jwts.builder()
                 .setSubject(username)        // 标准Claim：存用户名（方便后续验证）
                 .claim("id", userId)         // 自定义Claim：存用户ID（核心）
+                .claim("role", role)         // 自定义Claim：存用户角色
                 .setIssuedAt(new Date())     // 签发时间
                 .setExpiration(new Date(System.currentTimeMillis() + expireTime)) // 过期时间
                 .signWith(key)               // 密钥签名
@@ -138,12 +147,14 @@ public class JwtUtil {
         Claims claims = parseToken(token);
         String username = claims.getSubject();
         Long userId = claims.get("id", Long.class);
+        Integer role = claims.get("role", Integer.class);
 
         // 生成新的Token，保持相同的用户信息
         SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
         return Jwts.builder()
                 .setSubject(username)
                 .claim("id", userId)
+                .claim("role", role)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expireTime))
                 .signWith(key)
