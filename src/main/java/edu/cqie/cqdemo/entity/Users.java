@@ -37,7 +37,7 @@ public class Users {
     private String avatarUrl;
 
     /**
-     * 用户角色：0-普通用户，1-管理员
+     * 用户角色：0-普通用户，1-管理员 2-vip
      * 对应数据库字段：role (TINYINT UNSIGNED)
      */
     @TableField(value = "role")
