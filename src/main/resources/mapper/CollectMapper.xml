@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="edu.cqie.cqdemo.mapper.CollectMapper">
+
+<!--    查询用户收藏的美食-->
+    <select id="seletctfood" resultType="edu.cqie.cqdemo.entity.Food">
+        select food_categories.id,
+               food_categories.food_id,
+               food_categories.category_id,
+               food_categories.created_at,
+               food_categories.name,
+               food_categories.details,
+               food_categories.image from collections left join food_categories on collections.target_id=food_categories.id where user_id=#{user_id} and collections.target_type=2
+    </select>
+<!--    查询用户收藏的路线-->
+    <select id="seletctroute" resultType="edu.cqie.cqdemo.entity.Routes">
+        select * from collections left join routes on collections.target_id=routes.id where user_id= #{user_id} and collections.target_type=1
+    </select>
+<!--    查询收藏的景点-->
+    <select id="seletctscenic" resultType="edu.cqie.cqdemo.entity.Scenics">
+        select * from collections left join scenics on collections.target_id=scenics.id where user_id= #{user_id} and collections.target_type=3
+    </select>
+</mapper>
