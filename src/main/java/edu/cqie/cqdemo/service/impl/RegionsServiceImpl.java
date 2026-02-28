@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 /**
 * @author
@@ -26,6 +27,11 @@ public class RegionsServiceImpl extends ServiceImpl<RegionsMapper, Regions>
     @Override
     public List<Regions> getRegionsIdAndName() {
         return regionsMapper.getRegionsIdAndName();
+    }
+
+    @Override
+    public List<Map<String, Object>> popularityComparison() {
+        return regionsMapper.popularityComparison();
     }
 }
 

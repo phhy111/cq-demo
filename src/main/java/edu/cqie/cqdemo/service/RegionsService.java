@@ -4,6 +4,7 @@ import edu.cqie.cqdemo.entity.Regions;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.List;
+import java.util.Map;
 
 /**
 * @author
@@ -16,4 +17,6 @@ public interface RegionsService extends IService<Regions> {
      * @return
      */
     public List<Regions> getRegionsIdAndName();
+
+    List<Map<String,Object>> popularityComparison();
 }

@@ -2,9 +2,11 @@ package edu.cqie.cqdemo.mapper;
 
 import edu.cqie.cqdemo.entity.Regions;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.MapKey;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
+import java.util.Map;
 
 /**
 * @author
@@ -19,6 +21,13 @@ public interface RegionsMapper extends BaseMapper<Regions> {
      * @return
      */
     public List<Regions> getRegionsIdAndName();
+
+    /**
+     *各区县内容热度对比
+     * @return
+     */
+    @MapKey("region_id")
+    List<Map<String,Object>> popularityComparison();
 }
 
 
