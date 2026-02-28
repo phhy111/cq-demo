@@ -226,6 +226,9 @@ public class GuidesController {
 
             // 根据添加结果返回不同的响应
             if (isAdded != null && isAdded == 1) {
+                // 同时添加到MySQL
+                collections.setCreatedAt(new Date());
+                collectionsService.save(collections);
                 return Result.success("收藏成功");
             } else {
                 return Result.success("已收藏，无需重复操作");

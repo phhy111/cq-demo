@@ -9,4 +9,5 @@ public interface PersonerlService {
     public int updateUserpassword(Long id,String password);
     public int updateUseremail(Long id,String email);
     public int updateUsersex(Long id,int gender);
+    public int updateUserInfo(Long id, String username, int gender, String phone, String email, String perSignature);
 }

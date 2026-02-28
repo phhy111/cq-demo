@@ -212,12 +212,8 @@ public class AuthController {
             // 设置创建时间，避免 created_at 为空违反非空约束
             sysUser.setCreatedAt(LocalDateTime.now());
 
-            try {
-                sysUser.setExt2(registerDTO.getExt2() != null ? Math.toIntExact(registerDTO.getExt2()) : null);
-            } catch (ArithmeticException e) {
-                log.error("ext2字段转换失败：{}", registerDTO.getExt2(), e);
-                return Result.error("ext2字段数值超出整数范围");
-            }
+            // 设置个人签名（如果有）
+            // sysUser.setPerSignature(registerDTO.getPerSignature());
 
             sysUser.setExt3(registerDTO.getExt3());
 

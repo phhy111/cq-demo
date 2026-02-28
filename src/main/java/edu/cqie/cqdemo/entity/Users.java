@@ -73,11 +73,11 @@ public class Users {
     private String phone;
 
     /**
-     * 备用数字字段1（可存积分/等级等）
-     * 对应数据库字段：ext2 (INT UNSIGNED)
+     * 个人签名
+     * 对应数据库字段：per_signature (VARCHAR(500))
      */
-    @TableField(value = "ext2")
-    private Integer ext2;
+    @TableField(value = "per_signature")
+    private String perSignature;
 
     /**
      * 备用小整数字段（可存开关/状态等）

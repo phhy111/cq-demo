@@ -16,4 +16,5 @@ public interface PersonerlMapper {
     //修改邮箱
     int updateUseremail(@Param("id") long id ,@Param("email") String email);
     int updateUsersex(@Param("id") long id ,@Param("gender") int gender);
+    int updateUserInfo(@Param("id") long id, @Param("username") String username, @Param("gender") int gender, @Param("phone") String phone, @Param("email") String email, @Param("perSignature") String perSignature);
 }

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="edu.cqie.cqdemo.mapper.BrowsingHistoryMapper">
+    <select id="selectByUserIdAndType" resultType="edu.cqie.cqdemo.entity.BrowsingHistory">
+        SELECT * FROM business_history
+        WHERE user_id = #{userId} AND type = #{type}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByUserId" resultType="edu.cqie.cqdemo.entity.BrowsingHistory">
+        SELECT * FROM business_history
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+    </select>
+
+    <delete id="deleteByUserIdAndBusinessId">
+        DELETE FROM business_history
+        WHERE user_id = #{userId} AND business_id = #{businessId} AND type = #{type}
+    </delete>
+
+    <delete id="deleteByUserId">
+        DELETE FROM business_history
+        WHERE user_id = #{userId}
+    </delete>
+</mapper>
