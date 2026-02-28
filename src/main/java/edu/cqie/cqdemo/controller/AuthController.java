@@ -4,15 +4,17 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import edu.cqie.cqdemo.common.Result;
 import edu.cqie.cqdemo.dto.LoginDTO;
 import edu.cqie.cqdemo.dto.RegisterDTO;
+import edu.cqie.cqdemo.entity.UserBehaviorLogs;
 import edu.cqie.cqdemo.entity.Users;
 
+import edu.cqie.cqdemo.mapper.UserBehaviorLogsMapper;
 import edu.cqie.cqdemo.mapper.UserMapper;
 import edu.cqie.cqdemo.service.impl.UserDetailsServiceImpl;
 import edu.cqie.cqdemo.util.OSSOperationUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -27,7 +29,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.concurrent.TimeUnit;
@@ -56,13 +57,14 @@ public class AuthController {
     private final StringRedisTemplate stringRedisTemplate;
     private final JavaMailSender mailSender;
     private final OSSOperationUtil ossOperationUtil;
+    private final UserBehaviorLogsMapper userBehaviorLogMapper;
 
 
     /**
      * 登录接口（保持不变，登录仍用JSON接收）
      */
     @PostMapping("/login")
-    public Result<java.util.Map<String, Object>> login(@Valid @RequestBody LoginDTO loginDTO) {
+    public Result<java.util.Map<String, Object>> login(@Valid @RequestBody LoginDTO loginDTO, HttpServletRequest request) {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginDTO.getUsername(), loginDTO.getPassword())
@@ -78,6 +80,36 @@ public class AuthController {
             Users user = sysUserMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Users>()
                     .eq(Users::getUsername, loginDTO.getUsername()));
             System.out.println("当前登录信息"+user);
+
+            // 记录用户行为日志（仅普通用户，role=0）
+            if (user.getRole() != null && user.getRole() == 0) {
+                UserBehaviorLogs log = new UserBehaviorLogs();
+                log.setUserId(user.getId());
+                log.setBehaviorType(1); // 1-登录
+                log.setBehaviorTime(new java.util.Date());
+                // 获取IP地址
+                String ipAddress = request.getHeader("X-Forwarded-For");
+                if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+                    ipAddress = request.getHeader("Proxy-Client-IP");
+                }
+                if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+                    ipAddress = request.getHeader("WL-Proxy-Client-IP");
+                }
+                if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+                    ipAddress = request.getRemoteAddr();
+                }
+                // 处理多级代理IP的情况，取第一个IP
+                if (ipAddress != null && ipAddress.contains(",")) {
+                    ipAddress = ipAddress.split(",")[0].trim();
+                }
+                log.setIpAddress(ipAddress);
+                
+                // 获取设备信息
+                String userAgent = request.getHeader("User-Agent");
+                log.setDeviceInfo(userAgent != null ? userAgent : "Unknown Device");
+                
+                userBehaviorLogMapper.insert(log);
+            }
 
             // 构建返回结果
             java.util.Map<String, Object> resultMap = new java.util.HashMap<>();

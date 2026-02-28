@@ -13,4 +13,9 @@ class RegionsControllerTest {
     void getRegionsIdAndName() {
         regionsController.getRegionsIdAndName();
     }
+
+    @Test
+    void popularityComparison() {
+        regionsController.popularityComparison();
+    }
 }

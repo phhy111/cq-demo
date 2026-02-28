@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="edu.cqie.cqdemo.mapper.UserBehaviorLogsMapper">
+
+    <resultMap id="BaseResultMap" type="edu.cqie.cqdemo.entity.UserBehaviorLogs">
+            <id property="id" column="id" />
+            <result property="userId" column="user_id" />
+            <result property="behaviorType" column="behavior_type" />
+            <result property="behaviorTime" column="behavior_time" />
+            <result property="ipAddress" column="ip_address" />
+            <result property="deviceInfo" column="device_info" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,user_id,behavior_type,behavior_time,ip_address,device_info
+    </sql>
+    <select id="findActiveUsersByDateRange" resultType="java.util.Map">
+        SELECT DATE(behavior_time) AS date, COUNT(DISTINCT user_id) AS count
+            FROM user_behavior_logs
+            WHERE behavior_time BETWEEN #{startDate} AND #{endDate}
+            GROUP BY DATE(behavior_time)
+    </select>
+</mapper>

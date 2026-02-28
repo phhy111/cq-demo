@@ -6,4 +6,10 @@
         FROM users
         WHERE id = #{id}
     </select>
+    <select id="findNewUsersByDateRange" resultType="java.util.Map">
+        SELECT DATE(created_at) AS date, COUNT(*) AS count
+            FROM users
+            WHERE created_at BETWEEN #{startDate} AND #{endDate}
+            GROUP BY DATE(created_at)
+    </select>
 </mapper>
