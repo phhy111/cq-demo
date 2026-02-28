@@ -11,129 +11,111 @@ import org.springframework.stereotype.Component;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j
 public class LikeSyncTask {
 
     @Autowired
-    private RedisTemplate redisTemplate;
-
-    @Autowired
     private LikesService likesService;
 
-    // 用于存储同步锁，防止并发情况下多个进程同时访问MySQL
-    private final ConcurrentHashMap<String, Object> syncLocks = new ConcurrentHashMap<>();
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /**
-     * 同步Redis中的点赞数据到MySQL
-     * 每1分钟执行一次
+     * 定时任务：将Redis中的点赞数据同步到MySQL
+     * 每1分2秒执行一次
      */
-    @Scheduled(fixedRate = 1 * 60 * 1000)
-    public void syncLikeData() {
+    @Scheduled(fixedRate = 62 * 1000) // 1分2秒
+    public void syncLikesToMySQL() {
         try {
-            log.info("开始同步Redis点赞数据到MySQL");
+            // 扫描Redis中所有以"likes:"开头的键
+            Set<String> keys = redisTemplate.keys("likes:*");
+            if (keys != null && !keys.isEmpty()) {
+                for (String key : keys) {
+                    // 解析key，格式为"likes:targetType:targetId"
+                    String[] parts = key.split(":");
+                    if (parts.length == 3) {
+                        int targetType = Integer.parseInt(parts[1]);
+                        Long targetId = Long.parseLong(parts[2]);
 
-            // 扫描所有点赞相关的Redis Key
-            Set<String> likeKeys = redisTemplate.keys("likes:*");
-            if (likeKeys == null || likeKeys.isEmpty()) {
-                log.info("没有发现点赞相关的Redis Key");
-                return;
-            }
+                        // 获取该key对应的所有userId
+                        Set<Object> userIds = redisTemplate.opsForSet().members(key);
+                        if (userIds != null && !userIds.isEmpty()) {
+                            for (Object obj : userIds) {
+                                // 将Object转换为Long类型
+                                Long userId = obj instanceof Integer ? Long.valueOf((Integer) obj) : Long.valueOf(obj.toString());
+                                // 检查该点赞是否已经存在于MySQL中
+                                com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Likes> queryWrapper = new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+                                queryWrapper.eq("user_id", userId);
+                                queryWrapper.eq("target_id", targetId);
+                                queryWrapper.eq("target_type", targetType);
 
-            int syncCount = 0;
-            for (String key : likeKeys) {
-                // 解析Key，获取targetType和targetId
-                // Key格式：likes:{targetType}:{targetId}
-                String[] parts = key.split(":");
-                if (parts.length != 3) {
-                    log.warn("无效的点赞Key格式：{}", key);
-                    continue;
-                }
+                                // 执行查询
+                                Likes existingLike = likesService.getOne(queryWrapper);
 
-                Integer targetType = Integer.parseInt(parts[1]);
-                Long targetId = Long.parseLong(parts[2]);
+                                // 如果不存在，则插入
+                                if (existingLike == null) {
+                                    Likes like = new Likes();
+                                    like.setUserId(userId);
+                                    like.setTargetId(targetId);
+                                    like.setTargetType(targetType);
+                                    like.setCreatedAt(new Date());
 
-                // 获取Redis中该目标的所有点赞用户ID
-                Set<Object> userIds = redisTemplate.opsForSet().members(key);
-                if (userIds == null || userIds.isEmpty()) {
-                    continue;
-                }
-
-                // 为每个目标创建同步锁，确保只有一个进程处理该目标的点赞数据
-                String lockKey = "sync:lock:like:" + targetType + ":" + targetId;
-                Object lock = syncLocks.computeIfAbsent(lockKey, k -> new Object());
-
-                synchronized (lock) {
-                    // 同步到MySQL
-                    for (Object userIdObj : userIds) {
-                        Long userId = Long.parseLong(userIdObj.toString());
-
-                        // 检查MySQL中是否已存在该点赞记录
-                        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Likes> queryWrapper = new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
-                        queryWrapper.eq("user_id", userId);
-                        queryWrapper.eq("target_id", targetId);
-                        queryWrapper.eq("target_type", targetType);
-
-                        Likes existingLike = likesService.getOne(queryWrapper);
-                        if (existingLike == null) {
-                            // 不存在，创建新记录
-                            Likes newLike = new Likes();
-                            newLike.setUserId(userId);
-                            newLike.setTargetId(targetId);
-                            newLike.setTargetType(targetType);
-                            newLike.setCreatedAt(new Date());
-                            likesService.save(newLike);
-                            syncCount++;
+                                    // 插入到MySQL
+                                    likesService.save(like);
+                                    log.info("新增点赞记录：userId={}, targetId={}, targetType={}", userId, targetId, targetType);
+                                } else {
+                                    log.info("点赞记录已存在，跳过插入：userId={}, targetId={}, targetType={}", userId, targetId, targetType);
+                                }
+                            }
                         }
                     }
                 }
-
-                // 重置Redis Key的过期时间
-                redisTemplate.expire(key, 7, TimeUnit.DAYS);
             }
 
-            log.info("Redis点赞数据同步完成，同步了 {} 条记录", syncCount);
+            // 处理取消点赞的情况：删除MySQL中存在但Redis中不存在的点赞记录
+            // 获取MySQL中所有点赞记录
+            List<Likes> allLikesInMySQL = likesService.list();
+            for (Likes like : allLikesInMySQL) {
+                String redisKey = "likes:" + like.getTargetType() + ":" + like.getTargetId();
+                // 检查Redis中是否存在该点赞
+                Boolean existsInRedis = redisTemplate.opsForSet().isMember(redisKey, like.getUserId());
+                if (existsInRedis == null || !existsInRedis) {
+                    // Redis中不存在，从MySQL中删除
+                    likesService.removeById(like.getId());
+                    log.info("从MySQL删除点赞记录：userId={}, targetId={}, targetType={}", like.getUserId(), like.getTargetId(), like.getTargetType());
+                }
+            }
+
+            log.info("Redis点赞数据同步到MySQL成功");
         } catch (Exception e) {
-            log.error("同步Redis点赞数据到MySQL失败：", e);
+            e.printStackTrace();
+            log.error("Redis点赞数据同步到MySQL失败：{}", e.getMessage());
         }
     }
 
     /**
-     * 清理MySQL中不存在于Redis的点赞记录
-     * 每1分钟执行一次
+     * 从MySQL同步数据到Redis（带同步锁机制）
+     * 用于Redis数据失效后重新同步
      */
-    @Scheduled(fixedRate = 1 * 60 * 1000)
-    public void cleanInvalidLikeData() {
-        try {
-            log.info("开始清理MySQL中无效的点赞记录");
-
-            // 为清理操作创建全局锁，确保只有一个进程执行清理
-            Object cleanLock = syncLocks.computeIfAbsent("sync:lock:clean:like", k -> new Object());
-
-            synchronized (cleanLock) {
-                // 查询MySQL中所有点赞记录（分批处理）
+    public void syncDataFromMysqlToRedis() {
+        // 使用双重检查锁模式确保只有一个线程执行同步操作
+        synchronized (this) {
+            try {
+                // 从MySQL同步所有点赞数据到Redis
                 List<Likes> allLikes = likesService.list();
-                int cleanCount = 0;
-
                 for (Likes like : allLikes) {
-                    // 检查Redis中是否存在对应的记录
                     String redisKey = "likes:" + like.getTargetType() + ":" + like.getTargetId();
-                    Boolean existsInRedis = redisTemplate.opsForSet().isMember(redisKey, like.getUserId());
-
-                    if (existsInRedis == null || !existsInRedis) {
-                        // Redis中不存在，从MySQL中删除
-                        likesService.removeById(like.getId());
-                        cleanCount++;
-                    }
+                    redisTemplate.opsForSet().add(redisKey, like.getUserId());
+                    // 设置26天过期时间
+                    redisTemplate.expire(redisKey, 26, java.util.concurrent.TimeUnit.DAYS);
                 }
-
-                log.info("MySQL无效点赞记录清理完成，删除了 {} 条记录", cleanCount);
+                log.info("从MySQL同步点赞数据到Redis成功");
+            } catch (Exception e) {
+                e.printStackTrace();
+                log.error("从MySQL同步点赞数据到Redis失败：{}", e.getMessage());
             }
-        } catch (Exception e) {
-            log.error("清理MySQL无效点赞记录失败：", e);
         }
     }
 }

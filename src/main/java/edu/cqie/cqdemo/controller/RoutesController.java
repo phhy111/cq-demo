@@ -181,7 +181,7 @@ public class RoutesController {
             for (Likes like : allLikes) {
                 String redisKey = "likes:3:" + like.getTargetId();
                 redisTemplate.opsForSet().add(redisKey, like.getUserId());
-                redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+                redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
             }
 
             // 2. 同步收藏数据
@@ -189,7 +189,7 @@ public class RoutesController {
             for (Collections collection : allCollections) {
                 String redisKey = "collections:3:" + collection.getTargetId();
                 redisTemplate.opsForSet().add(redisKey, collection.getUserId());
-                redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+                redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
             }
 
             System.out.println("从MySQL同步数据到Redis成功");
@@ -271,11 +271,15 @@ public class RoutesController {
             String redisKey = "likes:" + likes.getTargetType() + ":" + likes.getTargetId();
             // 2. 正确调用Redis Set的add方法：opsForSet()获取Set操作对象，再调用add
             Long isAdded = redisTemplate.opsForSet().add(redisKey, likes.getUserId());
-            // 设置7天过期时间
-            redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+            // 设置26天过期时间
+            redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
 
             // 3. 根据添加结果返回不同的响应
             if (isAdded != null && isAdded == 1) {
+                // 同时添加到MySQL
+                likes.setCreatedAt(new Date());
+                likesService.save(likes);
+                log.info("点赞成功：userId={}, targetId={}, targetType={}", likes.getUserId(), likes.getTargetId(), likes.getTargetType());
                 return Result.success("点赞成功");
             } else {
                 return Result.success("已点赞，无需重复操作");
@@ -305,8 +309,8 @@ public class RoutesController {
             String redisKey = "likes:" + likes.getTargetType() + ":" + likes.getTargetId();
             // 2. 从Redis Set中移除userId
             Long isRemoved = redisTemplate.opsForSet().remove(redisKey, likes.getUserId());
-            // 设置7天过期时间
-            redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+            // 设置26天过期时间
+            redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
             System.out.println(isRemoved);
 
             // 3. 根据移除结果返回不同的响应
@@ -394,7 +398,7 @@ public class RoutesController {
                     // 如果MySQL中存在，同步到Redis
                     if (mysqlLiked) {
                         redisTemplate.opsForSet().add(redisKey, likes.getUserId());
-                        redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+                        redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
                     } else {
                         // 如果MySQL中不存在，也同步到Redis，设置为false，防止缓存穿透
                         // 注意：这里不能直接存储false，因为Redis Set只存储存在的元素
@@ -426,7 +430,7 @@ public class RoutesController {
 
             if (likeCount != null) {
                 // 重置Redis Key的过期时间
-                redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+                redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
                 return Result.success(likeCount);
             } else {
                 // Redis中不存在，使用同步锁确保只有一个请求打到MySQL
@@ -437,7 +441,7 @@ public class RoutesController {
                     // 再次检查Redis，防止并发情况下已经有其他请求更新了Redis
                     likeCount = redisTemplate.opsForSet().size(redisKey);
                     if (likeCount != null) {
-                        redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+                        redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
                         return Result.success(likeCount);
                     }
 
@@ -455,7 +459,7 @@ public class RoutesController {
                         redisTemplate.opsForSet().add(redisKey, like.getUserId());
                     }
                     // 设置过期时间
-                    redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+                    redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
 
                     return Result.success(mysqlLikeCount);
                 }
@@ -482,11 +486,14 @@ public class RoutesController {
             String redisKey = "collections:" + collections.getTargetType() + ":" + collections.getTargetId();
             // 2. 正确调用Redis Set的add方法：opsForSet()获取Set操作对象，再调用add
             Long isAdded = redisTemplate.opsForSet().add(redisKey, collections.getUserId());
-            // 设置7天过期时间
-            redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+            // 设置26天过期时间
+            redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
 
             // 3. 根据添加结果返回不同的响应
             if (isAdded != null && isAdded == 1) {
+                // 同时添加到MySQL
+                collections.setCreatedAt(new Date());
+                collectionsService.save(collections);
                 return Result.success("收藏成功");
             } else {
                 return Result.success("已收藏，无需重复操作");
@@ -516,8 +523,8 @@ public class RoutesController {
             String redisKey = "collections:" + collections.getTargetType() + ":" + collections.getTargetId();
             // 2. 从Redis Set中移除userId
             Long isRemoved = redisTemplate.opsForSet().remove(redisKey, collections.getUserId());
-            // 设置7天过期时间
-            redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
+            // 设置26天过期时间
+            redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
             System.out.println(isRemoved);
 
             // 3. 根据移除结果返回不同的响应

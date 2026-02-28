@@ -57,7 +57,7 @@ public class PersonelController {
         }
         return response;
     }
-//    修改邮箱
+    //    修改邮箱
     @PostMapping("/updateEmail")
     public Map<String,Object> updateemail(@RequestBody Users request){
         int result=personerlService.updateUseremail(request.getId(),request.getEmail());
@@ -100,6 +100,20 @@ public class PersonelController {
     @PostMapping("/updateSex")
     public Map<String,Object> updatesex(@RequestBody Users request){
         int result=personerlService.updateUsersex(request.getId(),request.getGender());
+        Map<String,Object> response=new HashMap<>();
+        if(result>0){
+            response.put("code",200);
+            response.put("message","修改成功");
+        }else {
+            response.put("code",500);
+            response.put("message","修改失败");
+        }
+        return response;
+    }
+
+    @PostMapping("/updateUserInfo")
+    public Map<String,Object> updateUserInfo(@RequestBody Users request){
+        int result=personerlService.updateUserInfo(request.getId(), request.getUsername(), request.getGender(), request.getPhone(), request.getEmail(), request.getPerSignature());
         Map<String,Object> response=new HashMap<>();
         if(result>0){
             response.put("code",200);

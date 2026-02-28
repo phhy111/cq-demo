@@ -30,13 +30,19 @@ public class PersonelServiceimpl implements PersonerlService {
 
     @Override
     public int updateUseremail(Long id,String  email) {
-       int result=personerlMapper.updateUseremail(id,email);
-       return  result;
+        int result=personerlMapper.updateUseremail(id,email);
+        return  result;
     }
 
     @Override
     public int updateUsersex(Long id, int gender) {
         int result=personerlMapper.updateUsersex(id,gender);
+        return result;
+    }
+
+    @Override
+    public int updateUserInfo(Long id, String username, int gender, String phone, String email, String perSignature) {
+        int result=personerlMapper.updateUserInfo(id, username, gender, phone, email, perSignature);
         return result;
     }
 }

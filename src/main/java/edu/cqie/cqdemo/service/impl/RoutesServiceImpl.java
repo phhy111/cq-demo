@@ -11,10 +11,10 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
-* @author
-* @description 针对表【routes(路线表)】的数据库操作Service实现
-* @createDate 2026-01-31 11:47:59
-*/
+ * @author
+ * @description 针对表【routes(路线表)】的数据库操作Service实现
+ * @createDate 2026-01-31 11:47:59
+ */
 @Service
 public class RoutesServiceImpl extends ServiceImpl<RoutesMapper, Routes> implements RoutesService {
     private static final String LIKE_KEY_PREFIX = "routes:like:";
