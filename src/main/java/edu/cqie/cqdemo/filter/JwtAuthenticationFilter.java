@@ -37,25 +37,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
             
-            // 对无需登录的接口直接放行
-            String uri = request.getRequestURI();
-            if (uri.startsWith("/api/auth/login")
-                    || uri.startsWith("/api/auth/register")
-                    || uri.startsWith("/api/auth/sendCode")
-                    || uri.startsWith("/api/comments/AddCommentsInfo")) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-
             // 1. 从请求头提取Token
             String token = jwtUtil.getTokenFromRequest(request);
             if (token == null) {
-                log.debug("请求头中未获取到JWT Token，拒绝访问：{}", request.getRequestURI());
-                // 无Token时直接返回401，终止请求
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json;charset=utf-8");
-                response.getWriter().write("{\"msg\":\"未登录，请先登录\"}");
-                return; // 关键：终止过滤器链，不再放行
+                // 如果没有Token，直接放行，交由SecurityConfig处理
+                filterChain.doFilter(request, response);
+                return;
             }
 
             // 2. 从Token中解析用户名

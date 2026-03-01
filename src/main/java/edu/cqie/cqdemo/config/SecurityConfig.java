@@ -86,6 +86,18 @@ public class SecurityConfig {
                             response.setStatus(200);
                             response.getWriter().write("{\"code\": 200, \"message\": \"退出成功\"}");
                         }))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(401);
+                            response.setContentType("application/json;charset=utf-8");
+                            response.getWriter().write("{\"code\":401,\"msg\":\"未登录，请先登录\"}");
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(403);
+                            response.setContentType("application/json;charset=utf-8");
+                            response.getWriter().write("{\"code\":403,\"msg\":\"权限不足\"}");
+                        })
+                )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
