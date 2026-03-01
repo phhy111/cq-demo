@@ -52,7 +52,9 @@ public class BrowsingHistoryServiceImpl implements BrowsingHistoryService {
         history.setUserId(userId);
         history.setBusinessId(businessId);
         history.setType(type);
-        history.setCreateTime(new Date());
+        Date now = new Date();
+        history.setCreateTime(now);
+        history.setUpdateTime(now);
 
         // 从Redis获取现有历史
         String existingHistory = redisUtil.get(key);
@@ -195,6 +197,14 @@ public class BrowsingHistoryServiceImpl implements BrowsingHistoryService {
 
                     // 重新插入
                     for (BrowsingHistory history : historyList) {
+                        // 确保updateTime不为null
+                        if (history.getUpdateTime() == null) {
+                            Date now = new Date();
+                            if (history.getCreateTime() == null) {
+                                history.setCreateTime(now);
+                            }
+                            history.setUpdateTime(now);
+                        }
                         browsingHistoryMapper.insert(history);
                     }
                 }

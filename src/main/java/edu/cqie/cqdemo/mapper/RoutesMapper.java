@@ -9,11 +9,11 @@ import javax.swing.*;
 import java.util.List;
 
 /**
-* @author
-* @description 针对表【routes(路线表)】的数据库操作Mapper
-* @createDate 2026-01-31 11:47:59
-* @Entity cq-demo.Routes
-*/
+ * @author
+ * @description 针对表【routes(路线表)】的数据库操作Mapper
+ * @createDate 2026-01-31 11:47:59
+ * @Entity cq-demo.Routes
+ */
 @Mapper
 public interface RoutesMapper extends BaseMapper<Routes> {
     public List<Routes> getRoutesListInfo();
@@ -30,6 +30,9 @@ public interface RoutesMapper extends BaseMapper<Routes> {
     void updateLikeCountAndCollectCount();
 
     Routes getRouteDetail(Integer id);
+
+    //查询所有状态的路线数据
+    List<Routes> getAllRoutesWithAllStatus();
 }
 
 

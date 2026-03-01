@@ -27,4 +27,7 @@ public interface RoutesService extends IService<Routes> {
 
     //查看特定id的路线信息
     Routes getRouteDetail(Integer id);
+
+    //查询所有状态的路线数据
+    List<Routes> getAllRoutesWithAllStatus();
 }

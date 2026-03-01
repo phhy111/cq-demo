@@ -215,7 +215,7 @@ public class AuthController {
             // 设置个人签名（如果有）
             // sysUser.setPerSignature(registerDTO.getPerSignature());
 
-            sysUser.setExt3(registerDTO.getExt3());
+            sysUser.setUserStatus(0);
 
             try {
                 sysUser.setExt4(registerDTO.getExt4() != null ? LocalDateTime.parse(registerDTO.getExt4()) : null);

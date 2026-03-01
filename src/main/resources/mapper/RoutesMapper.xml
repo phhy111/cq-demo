@@ -74,4 +74,11 @@
         FROM routes r
         WHERE r.id = #{id}
     </select>
+
+    <!-- 查询所有状态的路线数据 -->
+    <select id="getAllRoutesWithAllStatus" resultType="edu.cqie.cqdemo.entity.Routes">
+        SELECT r.*
+        FROM routes r
+        ORDER BY r.updated_at DESC
+    </select>
 </mapper>

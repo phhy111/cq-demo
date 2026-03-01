@@ -127,12 +127,33 @@ public class WorkSyncTask {
         try {
             log.info("开始清理Redis中不存在但MySQL中存在的作品数据");
 
-            // 这里需要实现清理逻辑
             // 1. 从MySQL获取所有用户的作品
-            // 2. 检查Redis中是否存在
-            // 3. 如果Redis中不存在，从MySQL删除
+            List<Routes> routesList = routesService.list();
+            List<Guides> guidesList = guidesService.list();
 
-            log.info("作品数据清理完成");
+            int deleteCount = 0;
+
+            // 检查Routes
+            for (Routes route : routesList) {
+                String redisKey = "user_works:" + route.getUserId() + ":" + route.getStatus();
+                if (!redisTemplate.hasKey(redisKey)) {
+                    routesService.removeById(route.getId());
+                    deleteCount++;
+                }
+            }
+
+            // 检查Guides
+            for (Guides guide : guidesList) {
+                String redisKey = "user_works:" + guide.getUserId() + ":" + guide.getStatus();
+                if (!redisTemplate.hasKey(redisKey)) {
+                    guidesService.removeById(guide.getId());
+                    deleteCount++;
+                }
+            }
+
+            // Scenics没有userId字段，跳过处理
+
+            log.info("作品数据清理完成，删除了 {} 条数据", deleteCount);
         } catch (Exception e) {
             log.error("清理作品数据失败：", e);
         }

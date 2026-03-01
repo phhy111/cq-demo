@@ -83,8 +83,8 @@ public class Users {
      * 备用小整数字段（可存开关/状态等）
      * 对应数据库字段：ext3 (TINYINT UNSIGNED)
      */
-    @TableField(value = "ext3")
-    private Integer ext3;
+    @TableField(value = "user_status")
+    private Integer userStatus;
 
     /**
      * 备用时间字段（可存会员到期时间等）
