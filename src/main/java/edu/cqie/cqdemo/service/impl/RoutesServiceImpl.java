@@ -61,6 +61,11 @@ public class RoutesServiceImpl extends ServiceImpl<RoutesMapper, Routes> impleme
     public Routes getRouteDetail(Integer id) {
         return routesMapper.getRouteDetail(id);
     }
+
+    @Override
+    public List<Routes> getAllRoutesWithAllStatus() {
+        return routesMapper.getAllRoutesWithAllStatus();
+    }
 }
 
 

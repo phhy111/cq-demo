@@ -698,4 +698,61 @@ public class RoutesController {
         }
     }
 
+    /**
+     * 查询所有状态的路线数据
+     */
+    @GetMapping("/GetRoutesInfo")
+    public Result<List<Routes>> getRoutesInfo() {
+        List<Routes> routesList = routesService.getAllRoutesWithAllStatus();
+        if (routesList != null) {
+            return Result.success(routesList);
+        } else {
+            return Result.error("查询失败");
+        }
+    }
+
+    /**
+     * 更新路线状态，将待审核（2）状态更新为发布（1）状态
+     */
+    @PostMapping("/updateRouteStatus")
+    public Result updateRouteStatus(@RequestParam Integer id) {
+        try {
+            Routes route = routesService.getById(id);
+            if (route != null && route.getStatus() == 2) {
+                route.setStatus(1);
+                routesService.updateById(route);
+                return Result.success("审核通过成功");
+            } else {
+                return Result.error("路线不存在或状态不是待审核");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("审核通过失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 保存路线数据（新增或编辑）
+     */
+    @PostMapping("/saveRoute")
+    public Result saveRoute(@RequestBody Routes route) {
+        try {
+            if (route.getId() != null) {
+                // 编辑路线
+                routesService.updateById(route);
+                return Result.success("编辑成功");
+            } else {
+                // 新增路线
+                route.setStatus(2); // 默认状态为待审核
+                route.setCreatedAt(new Date());
+                route.setUpdatedAt(new Date());
+                routesService.save(route);
+                return Result.success("新增成功");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("保存失败：" + e.getMessage());
+        }
+    }
+
 }

@@ -1,7 +1,12 @@
 package edu.cqie.cqdemo.controller;
 
 import edu.cqie.cqdemo.common.Result;
-import edu.cqie.cqdemo.entity.*;
+import edu.cqie.cqdemo.entity.Collections;
+import edu.cqie.cqdemo.entity.Guides;
+import edu.cqie.cqdemo.entity.Likes;
+import edu.cqie.cqdemo.entity.Routes;
+import edu.cqie.cqdemo.entity.Scenics;
+import edu.cqie.cqdemo.entity.Users;
 import edu.cqie.cqdemo.service.CollectionsService;
 import edu.cqie.cqdemo.service.GuidesService;
 import edu.cqie.cqdemo.service.LikesService;
@@ -14,6 +19,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import edu.cqie.cqdemo.entity.LoginUser;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;

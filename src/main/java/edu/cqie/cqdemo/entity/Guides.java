@@ -3,8 +3,8 @@ package edu.cqie.cqdemo.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @TableName(value ="guides")
 @Data
@@ -118,13 +118,13 @@ public class Guides{
      * 创建时间
      */
     @TableField(value = "created_at", fill = FieldFill.INSERT)
-    private LocalDateTime createTime;
+    private Date createTime;
 
     /**
      * 更新时间
      */
     @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updateTime;
+    private Date updateTime;
 
     /**
      * 路线ID

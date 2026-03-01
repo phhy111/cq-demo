@@ -15,6 +15,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -353,5 +354,62 @@ public class GuidesController {
             throw new IllegalAccessException("用户未登录或令牌无效");
         }
         return (LoginUser) principal;
+    }
+
+    /**
+     * 查询所有状态的攻略数据
+     */
+    @GetMapping("/GetGuidesInfo")
+    public Result<List<Guides>> getGuidesInfo() {
+        List<Guides> guidesList = guidesService.getAllGuidesWithAllStatus();
+        if (guidesList != null) {
+            return Result.success(guidesList);
+        } else {
+            return Result.error("查询失败");
+        }
+    }
+
+    /**
+     * 更新攻略状态，将待审核（2）状态更新为发布（1）状态
+     */
+    @PostMapping("/updateGuideStatus")
+    public Result updateGuideStatus(@RequestParam Integer id) {
+        try {
+            Guides guide = guidesService.getById(id);
+            if (guide != null && guide.getStatus() == 2) {
+                guide.setStatus(1);
+                guidesService.updateById(guide);
+                return Result.success("审核通过成功");
+            } else {
+                return Result.error("攻略不存在或状态不是待审核");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("审核通过失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 保存攻略数据（新增或编辑）
+     */
+    @PostMapping("/saveGuide")
+    public Result saveGuide(@RequestBody Guides guide) {
+        try {
+            if (guide.getId() != null) {
+                // 编辑攻略
+                guidesService.updateById(guide);
+                return Result.success("编辑成功");
+            } else {
+                // 新增攻略
+                guide.setStatus(2); // 默认状态为待审核
+                guide.setCreateTime(new Date());
+                guide.setUpdateTime(new Date());
+                guidesService.save(guide);
+                return Result.success("新增成功");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("保存失败：" + e.getMessage());
+        }
     }
 }

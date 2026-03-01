@@ -9,4 +9,9 @@ public interface GuidesService extends IService<Guides> {
      * 根据路线ID获取相关攻略列表
      */
     List<Guides> getGuidesByRouteId(Integer routeId);
+
+    /**
+     * 查询所有状态的攻略数据
+     */
+    List<Guides> getAllGuidesWithAllStatus();
 }
