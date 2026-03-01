@@ -2,6 +2,7 @@ package edu.cqie.cqdemo.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import edu.cqie.cqdemo.common.Result;
 import edu.cqie.cqdemo.entity.Users;
 import edu.cqie.cqdemo.mapper.UserBehaviorLogsMapper;
 import edu.cqie.cqdemo.mapper.UserMapper;
@@ -30,6 +31,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper,Users>implements Use
     @Override
     public Users getUserById(Long id) {
         return userMapper.selectById(id);
+    }
+
+    @Override
+    public List<Users> getUsersInfo() {
+            return userMapper.getUsersInfo();
     }
 
 }

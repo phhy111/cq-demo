@@ -537,5 +537,13 @@ public class UserController {
             return Result.error("获取作品列表失败：" + e.getMessage());
         }
     }
+    @GetMapping("/getUserInfo")
+    public Result getUserInfo() {
+        if (userService.getUsersInfo() != null){
+            return Result.success(userService.getUsersInfo());
+        }else {
+            return Result.error("获取用户信息失败");
+        }
+    }
 
 }
