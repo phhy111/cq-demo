@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+
 @Mapper
 public interface UserMapper extends BaseMapper<Users> {
 
@@ -42,4 +43,9 @@ public interface UserMapper extends BaseMapper<Users> {
     """)
     List<Map<String, Object>> countActiveUserByDay(@Param("startTime") LocalDateTime startTime,
                                               @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 用户信息展示
+     */
+    List<Users> getUsersInfo();
 }

@@ -9,5 +9,6 @@ import java.util.Map;
 public interface UserService extends IService<Users> {
     String getUserName(Long id);
     Users getUserById(Long id);
+    List<Users> getUsersInfo();
 
 }
