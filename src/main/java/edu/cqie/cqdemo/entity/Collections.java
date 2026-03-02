@@ -1,9 +1,13 @@
 package edu.cqie.cqdemo.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
+
 import lombok.Data;
 
 import java.util.Date;
+
 
 @TableName("collections")
 @Data
@@ -22,6 +26,7 @@ public class Collections {
 
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private Date createdAt;
+
 
     @TableField("ext1")
     private String ext1;

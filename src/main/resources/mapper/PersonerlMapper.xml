@@ -34,4 +34,7 @@
                          per_signature = #{perSignature}
         where id = #{id}
     </update>
+<!--    查询店铺-->
+    <select id=""></select>
 </mapper>
+
