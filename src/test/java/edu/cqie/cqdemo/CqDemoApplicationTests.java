@@ -4,6 +4,7 @@ package edu.cqie.cqdemo;
 
 import edu.cqie.cqdemo.entity.Collections;
 import edu.cqie.cqdemo.entity.Food;
+import edu.cqie.cqdemo.entity.Routes;
 import edu.cqie.cqdemo.mapper.CollectMapper;
 import edu.cqie.cqdemo.service.AiService;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,9 @@ public class CqDemoApplicationTests {
     @Test
 
     void contextLoads() {
-        List<Food> foodcollections=collectMapper.seletctfood(Long.valueOf(3));
-        System.out.println(foodcollections);
+//        List<Food> foodcollections=collectMapper.seletctfood(Long.valueOf(3));
+//        System.out.println(foodcollections);
+        List<Routes>routescollections=collectMapper.seletctroute(Long.valueOf(3));
+        System.out.println(routescollections);
 
 }}

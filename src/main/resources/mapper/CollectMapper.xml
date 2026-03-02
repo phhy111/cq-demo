@@ -16,7 +16,29 @@
     </select>
 <!--    查询用户收藏的路线-->
     <select id="seletctroute" resultType="edu.cqie.cqdemo.entity.Routes">
-        select * from collections left join routes on collections.target_id=routes.id where user_id= #{user_id} and collections.target_type=1
+        select routes.id,
+               routes.user_id,
+            routes.title,
+               routes.subtitle,
+                routes.cover_img,
+                routes.description,
+                routes.summary,
+                routes.day_count,
+                routes.type,
+                routes.budget_info,
+                routes.best_season,
+                routes.is_official,
+                routes.like_count,
+                routes.view_count,
+                routes.collect_count,
+                routes.comment_count,
+                routes.is_recommend,
+                routes.is_hot,
+                routes.status,
+                routes.sort_order,
+                routes.created_at,
+                routes.updated_at
+               from collections left join routes on collections.target_id=routes.id where collections.user_id= #{user_id} and collections.target_type=1
     </select>
 <!--    查询收藏的景点-->
     <select id="seletctscenic" resultType="edu.cqie.cqdemo.entity.Scenics">
