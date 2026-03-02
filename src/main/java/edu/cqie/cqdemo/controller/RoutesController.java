@@ -607,21 +607,26 @@ public class RoutesController {
                 }
             }
 
-            // 处理取消点赞的情况：删除MySQL中存在但Redis中不存在的点赞记录
-            // 获取MySQL中所有点赞记录
-            List<Likes> allLikesInMySQL = likesService.list();
-            for (Likes like : allLikesInMySQL) {
-                String redisKey = "likes:" + like.getTargetType() + ":" + like.getTargetId();
-                // 检查Redis中是否存在该点赞
-                Boolean existsInRedis = redisTemplate.opsForSet().isMember(redisKey, like.getUserId());
-                if (existsInRedis == null || !existsInRedis) {
-                    // Redis中不存在，从MySQL中删除
-                    likesService.removeById(like.getId());
-                    System.out.println("从MySQL删除点赞记录：userId=" + like.getUserId() + ", targetId=" + like.getTargetId() + ", targetType=" + like.getTargetType());
+            // 处理取消点赞的情况：删除 MySQL 中存在但 Redis 中不存在的点赞记录
+            // 只有在 Redis 中有数据时才执行此操作，防止 Redis 重启或数据过期时误删 MySQL 数据
+            if (keys != null && !keys.isEmpty()) {
+                // 获取 MySQL 中所有点赞记录
+                List<Likes> allLikesInMySQL = likesService.list();
+                for (Likes like : allLikesInMySQL) {
+                    String redisKey = "likes:" + like.getTargetType() + ":" + like.getTargetId();
+                    // 检查 Redis 中是否存在该点赞
+                    Boolean existsInRedis = redisTemplate.opsForSet().isMember(redisKey, like.getUserId());
+                    if (existsInRedis == null || !existsInRedis) {
+                        // Redis 中不存在，从 MySQL 中删除
+                        likesService.removeById(like.getId());
+                        System.out.println("从 MySQL 删除点赞记录：userId=" + like.getUserId() + ", targetId=" + like.getTargetId() + ", targetType=" + like.getTargetType());
+                    }
                 }
+            } else {
+                System.out.println("Redis 中无点赞数据，跳过删除操作，保留 MySQL 中的数据");
             }
 
-            System.out.println("Redis点赞数据同步到MySQL成功");
+            System.out.println("Redis 点赞数据同步到 MySQL 成功");
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Redis点赞数据同步到MySQL失败：" + e.getMessage());
@@ -677,21 +682,26 @@ public class RoutesController {
                 }
             }
 
-            // 处理取消收藏的情况：删除MySQL中存在但Redis中不存在的收藏记录
-            // 获取MySQL中所有收藏记录
-            List<Collections> allCollectionsInMySQL = collectionsService.list();
-            for (Collections collection : allCollectionsInMySQL) {
-                String redisKey = "collections:" + collection.getTargetType() + ":" + collection.getTargetId();
-                // 检查Redis中是否存在该收藏
-                Boolean existsInRedis = redisTemplate.opsForSet().isMember(redisKey, collection.getUserId());
-                if (existsInRedis == null || !existsInRedis) {
-                    // Redis中不存在，从MySQL中删除
-                    collectionsService.removeById(collection.getId());
-                    System.out.println("从MySQL删除收藏记录：userId=" + collection.getUserId() + ", targetId=" + collection.getTargetId() + ", targetType=" + collection.getTargetType());
+            // 处理取消收藏的情况：删除 MySQL 中存在但 Redis 中不存在的收藏记录
+            // 只有在 Redis 中有数据时才执行此操作，防止 Redis 重启或数据过期时误删 MySQL 数据
+            if (keys != null && !keys.isEmpty()) {
+                // 获取 MySQL 中所有收藏记录
+                List<Collections> allCollectionsInMySQL = collectionsService.list();
+                for (Collections collection : allCollectionsInMySQL) {
+                    String redisKey = "collections:" + collection.getTargetType() + ":" + collection.getTargetId();
+                    // 检查 Redis 中是否存在该收藏
+                    Boolean existsInRedis = redisTemplate.opsForSet().isMember(redisKey, collection.getUserId());
+                    if (existsInRedis == null || !existsInRedis) {
+                        // Redis 中不存在，从 MySQL 中删除
+                        collectionsService.removeById(collection.getId());
+                        System.out.println("从 MySQL 删除收藏记录：userId=" + collection.getUserId() + ", targetId=" + collection.getTargetId() + ", targetType=" + collection.getTargetType());
+                    }
                 }
+            } else {
+                System.out.println("Redis 中无收藏数据，跳过删除操作，保留 MySQL 中的数据");
             }
 
-            System.out.println("Redis收藏数据同步到MySQL成功");
+            System.out.println("Redis 收藏数据同步到 MySQL 成功");
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Redis收藏数据同步到MySQL失败：" + e.getMessage());

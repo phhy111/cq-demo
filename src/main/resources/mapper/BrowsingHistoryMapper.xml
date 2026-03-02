@@ -4,13 +4,13 @@
     <select id="selectByUserIdAndType" resultType="edu.cqie.cqdemo.entity.BrowsingHistory">
         SELECT * FROM business_history
         WHERE user_id = #{userId} AND type = #{type}
-        ORDER BY created_at DESC
+        ORDER BY create_time DESC
     </select>
 
     <select id="selectByUserId" resultType="edu.cqie.cqdemo.entity.BrowsingHistory">
         SELECT * FROM business_history
         WHERE user_id = #{userId}
-        ORDER BY created_at DESC
+        ORDER BY create_time DESC
     </select>
 
     <delete id="deleteByUserIdAndBusinessId">
