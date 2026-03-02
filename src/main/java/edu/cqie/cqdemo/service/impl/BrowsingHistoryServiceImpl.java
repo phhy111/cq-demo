@@ -4,7 +4,7 @@ import edu.cqie.cqdemo.entity.BrowsingHistory;
 import edu.cqie.cqdemo.mapper.BrowsingHistoryMapper;
 import edu.cqie.cqdemo.redis.util.RedisUtil;
 import edu.cqie.cqdemo.service.BrowsingHistoryService;
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
