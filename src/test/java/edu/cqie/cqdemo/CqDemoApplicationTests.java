@@ -25,8 +25,7 @@ public class CqDemoApplicationTests {
     private CollectMapper collectMapper;
     @Autowired
     private FoodCategoriesMapper foodCategoriesMapper;
-    @Autowired
-    private
+
     @Test
 
     void contextLoads() {

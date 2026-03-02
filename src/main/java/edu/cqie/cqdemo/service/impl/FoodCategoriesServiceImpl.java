@@ -23,8 +23,8 @@ public class FoodCategoriesServiceImpl extends ServiceImpl<FoodCategoriesMapper,
     public List<FoodCategories> selectFoods() {
       List<FoodCategories>foodCategories=foodCategoriesMapper.selectFoods();
       if (foodCategories!=null){
-          return null;}else {
-          return foodCategories;
+          return foodCategories;}else {
+          return null;
       }
     }
 }

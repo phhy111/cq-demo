@@ -73,7 +73,8 @@ public class FoodCategoriesController {
     }
 //    已发布的
     @GetMapping("/selectFoods")
-    public List<FoodCategories> selectFoods(){
-        return foodscategoriesService.selectFoods();
-    }
+    public Result<List<FoodCategories>> selectFoods(){
+          List<FoodCategories> foods = foodscategoriesService.selectFoods();
+          return Result.success(foods);}
+
 }
