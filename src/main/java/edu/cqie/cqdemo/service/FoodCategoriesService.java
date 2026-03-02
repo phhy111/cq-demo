@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface FoodCategoriesService extends IService<FoodCategories> {
     List<FoodCategories> getAllStatus();
+    List<FoodCategories> selectFoods();
 }

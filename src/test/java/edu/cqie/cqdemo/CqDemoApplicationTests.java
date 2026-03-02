@@ -6,6 +6,7 @@ import edu.cqie.cqdemo.entity.Collections;
 import edu.cqie.cqdemo.entity.Food;
 import edu.cqie.cqdemo.entity.Routes;
 import edu.cqie.cqdemo.mapper.CollectMapper;
+import edu.cqie.cqdemo.mapper.FoodCategoriesMapper;
 import edu.cqie.cqdemo.service.AiService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,12 +23,15 @@ public class CqDemoApplicationTests {
     private AiService aiService;
     @Autowired
     private CollectMapper collectMapper;
+    @Autowired
+    private FoodCategoriesMapper foodCategoriesMapper;
+    @Autowired
+    private
     @Test
 
     void contextLoads() {
-//        List<Food> foodcollections=collectMapper.seletctfood(Long.valueOf(3));
-//        System.out.println(foodcollections);
-        List<Routes>routescollections=collectMapper.seletctroute(Long.valueOf(3));
-        System.out.println(routescollections);
+
+
+        System.out.println(foodCategoriesMapper.selectFoods());
 
 }}

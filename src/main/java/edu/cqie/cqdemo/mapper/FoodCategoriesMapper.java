@@ -9,4 +9,5 @@ import java.util.List;
 @Mapper
 public interface FoodCategoriesMapper extends BaseMapper<FoodCategories> {
     List<FoodCategories> getAllStatus();
+    List<FoodCategories>selectFoods();
 }

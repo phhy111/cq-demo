@@ -11,17 +11,17 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/foods")
-public class FoodsController {
+public class FoodCategoriesController {
 
     @Autowired
-    private FoodCategoriesService foodsService;
+    private FoodCategoriesService foodscategoriesService;
 
     /**
      * 查询所有状态的美食数据
      */
     @GetMapping("/GetFoodInfo")
     public Result<List<FoodCategories>> getFoodInfo() {
-        List<FoodCategories> foodsList = foodsService.list();
+        List<FoodCategories> foodsList = foodscategoriesService.list();
         if (foodsList != null) {
             return Result.success(foodsList);
         } else {
@@ -35,10 +35,10 @@ public class FoodsController {
     @PostMapping("/updateFoodStatus")
     public Result updateFoodStatus(@RequestParam Integer id) {
         try {
-            FoodCategories food = foodsService.getById(id);
+            FoodCategories food = foodscategoriesService.getById(id);
             if (food != null && food.getStatus() == 2) {
                 food.setStatus(1);
-                foodsService.updateById(food);
+                foodscategoriesService.updateById(food);
                 return Result.success("审核通过成功");
             } else {
                 return Result.error("美食不存在或状态不是待审核");
@@ -57,18 +57,23 @@ public class FoodsController {
         try {
             if (food.getId() != null) {
                 // 编辑美食
-                foodsService.updateById(food);
+                foodscategoriesService.updateById(food);
                 return Result.success("编辑成功");
             } else {
                 // 新增美食
                 food.setStatus(2); // 默认状态为待审核
                 food.setCreatedAt(new Date());
-                foodsService.save(food);
+                foodscategoriesService.save(food);
                 return Result.success("新增成功");
             }
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error("保存失败：" + e.getMessage());
         }
+    }
+//    已发布的
+    @GetMapping("/selectFoods")
+    public List<FoodCategories> selectFoods(){
+        return foodscategoriesService.selectFoods();
     }
 }
