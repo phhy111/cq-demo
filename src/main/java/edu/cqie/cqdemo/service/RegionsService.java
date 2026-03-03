@@ -1,5 +1,6 @@
 package edu.cqie.cqdemo.service;
 
+import edu.cqie.cqdemo.dto.ScenicsAndRegionDTO;
 import edu.cqie.cqdemo.entity.Regions;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -19,4 +20,5 @@ public interface RegionsService extends IService<Regions> {
     public List<Regions> getRegionsIdAndName();
 
     List<Map<String,Object>> popularityComparison();
+    List<ScenicsAndRegionDTO> getScenicsAndRegionName();
 }

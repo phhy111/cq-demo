@@ -1,6 +1,7 @@
 package edu.cqie.cqdemo.controller;
 
 import edu.cqie.cqdemo.common.Result;
+import edu.cqie.cqdemo.dto.ScenicsAndRegionDTO;
 import edu.cqie.cqdemo.service.RegionsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,6 +41,20 @@ public class RegionsController {
 
         }else {
             return null;
+        }
+    }
+
+    /**
+     * 获取景区详细信息以及对应的区县信息
+     * @return
+     */
+    @GetMapping("/getScenicsAndRegionName")
+    public Result getScenicsAndRegionName(){
+        if (regionsService.getScenicsAndRegionName() != null){
+            return Result.success(regionsService.getScenicsAndRegionName());
+        }else {
+            System.out.println("获取景区详细信息以及对应的区县信息失败");
+            return Result.error("获取景区详细信息以及对应的区县信息失败");
         }
     }
 }

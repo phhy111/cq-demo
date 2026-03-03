@@ -1,5 +1,6 @@
 package edu.cqie.cqdemo.mapper;
 
+import edu.cqie.cqdemo.dto.ScenicsAndRegionDTO;
 import edu.cqie.cqdemo.entity.Regions;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.MapKey;
@@ -28,6 +29,12 @@ public interface RegionsMapper extends BaseMapper<Regions> {
      */
     @MapKey("region_id")
     List<Map<String,Object>> popularityComparison();
+
+    /**
+     * 获取景区详细信息以及对应的区县信息
+     * @return
+     */
+    List<ScenicsAndRegionDTO> getScenicsAndRegionName();
 }
 
 

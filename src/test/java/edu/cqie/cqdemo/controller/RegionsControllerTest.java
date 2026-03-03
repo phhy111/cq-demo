@@ -18,4 +18,9 @@ class RegionsControllerTest {
     void popularityComparison() {
         regionsController.popularityComparison();
     }
+
+    @Test
+    void getScenicsAndRegionName() {
+        regionsController.getScenicsAndRegionName();
+    }
 }

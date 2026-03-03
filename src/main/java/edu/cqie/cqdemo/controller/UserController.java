@@ -1,6 +1,7 @@
 package edu.cqie.cqdemo.controller;
 
 import edu.cqie.cqdemo.common.Result;
+import edu.cqie.cqdemo.config.SecurityConfig;
 import edu.cqie.cqdemo.entity.Collections;
 import edu.cqie.cqdemo.entity.Guides;
 import edu.cqie.cqdemo.entity.Likes;
@@ -13,10 +14,12 @@ import edu.cqie.cqdemo.service.LikesService;
 import edu.cqie.cqdemo.service.RoutesService;
 import edu.cqie.cqdemo.service.ScenicsService;
 import edu.cqie.cqdemo.service.UserService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import edu.cqie.cqdemo.entity.LoginUser;
@@ -26,8 +29,11 @@ import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/users")
+@RequiredArgsConstructor // 统一用lombok注入，移除@Autowired
 @Slf4j
 public class UserController {
+    @Autowired
+    private SecurityConfig securityConfig;
 
     @Autowired
     private UserService userService;
@@ -49,6 +55,10 @@ public class UserController {
 
     @Autowired
     private RedisTemplate redisTemplate;
+
+    private final PasswordEncoder passwordEncoder;
+
+
 
     /**
      * 获取路线或攻略的发布者信息
@@ -551,5 +561,48 @@ public class UserController {
             return Result.error("获取用户信息失败");
         }
     }
+    @PostMapping("/toggleStatus")
+    public Result toggleStatus(@RequestParam Long userId){
+        try{
+            boolean result = userService.toggleUserStatus(userId);
+            if (result){
+                return Result.success("切换用户状态成功");
+            }else {
+                return Result.error("切换用户状态失败");
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+            return Result.error("切换用户状态失败：" + e.getMessage());
+        }
+    }
 
+    @PostMapping("/resetPassword")
+    public Result resetPassword(@RequestBody Users users){
+        try{
+            boolean result = userService.resetPassword(users.getId(), passwordEncoder.encode("123456"));
+            if (result){
+                return Result.success("重置用户密码成功");
+            }else {
+                return Result.error("重置用户密码失败");
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+            return Result.error("重置用户密码失败：" + e.getMessage());
+        }
+    }
+
+    @PostMapping("/batchDisable")
+    public Result batchDisable(@RequestBody List<Long> ids){
+        try{
+            boolean result = userService.batchDisable(ids);
+            if (result){
+                return Result.success("批量禁用用户成功");
+            }else {
+                return Result.error("批量禁用用户失败");
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+            return Result.error("批量禁用用户失败：" + e.getMessage());
+        }
+    }
 }

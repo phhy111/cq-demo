@@ -64,4 +64,15 @@
         GROUP BY r.id, r.name
         ORDER BY heat_data DESC;
     </select>
+    <select id="getScenicsAndRegionName" resultType="edu.cqie.cqdemo.dto.ScenicsAndRegionDTO">
+        SELECT
+            s.*,
+            r.name AS region_name
+        FROM
+            scenics s
+                LEFT JOIN
+            regions r
+            ON
+                s.region_id = r.id;
+    </select>
 </mapper>
