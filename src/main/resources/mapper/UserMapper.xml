@@ -19,27 +19,32 @@
         FROM users
         WHERE id = #{id}
     </select>
-    <select id="findNewUsersByDateRange" resultType="java.util.Map">
-        SELECT DATE(created_at) AS date, COUNT(*) AS count
-            FROM users
-            WHERE created_at BETWEEN #{startDate} AND #{endDate}
-            GROUP BY DATE(created_at)
-    </select>
+<!--    <select id="findNewUsersByDateRange" resultType="java.util.Map">-->
+<!--        SELECT DATE(created_at) AS date, COUNT(*) AS count-->
+<!--            FROM users-->
+<!--            WHERE created_at BETWEEN #{startDate} AND #{endDate}-->
+<!--            GROUP BY DATE(created_at)-->
+<!--    </select>-->
     <select id="getUsersInfo" resultType="edu.cqie.cqdemo.entity.Users">
         SELECT
             id,
             username,
-            phone,
             email,
             avatar_url,
+            role,
+            password,
+            gender,
             created_at,
-            user_status ,
-            gender
+            phone,
+            per_signature,
+            user_status,
+            ext4,
+            ext5
         FROM
             users
         WHERE
             role = 0
         ORDER BY
-            created_at DESC;
+            created_at DESC
     </select>
 </mapper>

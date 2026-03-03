@@ -74,21 +74,26 @@ public class LikeSyncTask {
                 }
             }
 
-            // 处理取消点赞的情况：删除MySQL中存在但Redis中不存在的点赞记录
-            // 获取MySQL中所有点赞记录
-            List<Likes> allLikesInMySQL = likesService.list();
-            for (Likes like : allLikesInMySQL) {
-                String redisKey = "likes:" + like.getTargetType() + ":" + like.getTargetId();
-                // 检查Redis中是否存在该点赞
-                Boolean existsInRedis = redisTemplate.opsForSet().isMember(redisKey, like.getUserId());
-                if (existsInRedis == null || !existsInRedis) {
-                    // Redis中不存在，从MySQL中删除
-                    likesService.removeById(like.getId());
-                    log.info("从MySQL删除点赞记录：userId={}, targetId={}, targetType={}", like.getUserId(), like.getTargetId(), like.getTargetType());
+            // 处理取消点赞的情况：删除 MySQL 中存在但 Redis 中不存在的点赞记录
+            // 只有在 Redis 中有数据时才执行此操作，防止 Redis 重启或数据过期时误删 MySQL 数据
+            if (keys != null && !keys.isEmpty()) {
+                // 获取 MySQL 中所有点赞记录
+                List<Likes> allLikesInMySQL = likesService.list();
+                for (Likes like : allLikesInMySQL) {
+                    String redisKey = "likes:" + like.getTargetType() + ":" + like.getTargetId();
+                    // 检查 Redis 中是否存在该点赞
+                    Boolean existsInRedis = redisTemplate.opsForSet().isMember(redisKey, like.getUserId());
+                    if (existsInRedis == null || !existsInRedis) {
+                        // Redis 中不存在，从 MySQL 中删除
+                        likesService.removeById(like.getId());
+                        log.info("从 MySQL 删除点赞记录：userId={}, targetId={}, targetType={}", like.getUserId(), like.getTargetId(), like.getTargetType());
+                    }
                 }
+            } else {
+                log.info("Redis 中无点赞数据，跳过删除操作，保留 MySQL 中的数据");
             }
 
-            log.info("Redis点赞数据同步到MySQL成功");
+            log.info("Redis 点赞数据同步到 MySQL 成功");
         } catch (Exception e) {
             e.printStackTrace();
             log.error("Redis点赞数据同步到MySQL失败：{}", e.getMessage());

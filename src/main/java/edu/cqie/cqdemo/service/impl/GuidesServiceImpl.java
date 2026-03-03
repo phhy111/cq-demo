@@ -11,9 +11,10 @@ import java.util.List;
 public class GuidesServiceImpl extends ServiceImpl<GuidesMapper, Guides> implements GuidesService {
     @Override
     public List<Guides> getGuidesByRouteId(Integer routeId) {
-        // 使用MyBatis-Plus的条件查询
+        // 使用 MyBatis-Plus 的条件查询
         com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Guides> queryWrapper = new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
         queryWrapper.eq("routes_id", routeId);
+        queryWrapper.eq("status", 1); // 只查询已发布的攻略
         queryWrapper.orderByDesc("created_at");
 
         return baseMapper.selectList(queryWrapper);

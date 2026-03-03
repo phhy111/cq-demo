@@ -4,7 +4,7 @@ import edu.cqie.cqdemo.entity.BrowsingHistory;
 import edu.cqie.cqdemo.mapper.BrowsingHistoryMapper;
 import edu.cqie.cqdemo.redis.util.RedisUtil;
 import edu.cqie.cqdemo.service.BrowsingHistoryService;
-import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson.JSON;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -189,25 +189,30 @@ public class BrowsingHistoryServiceImpl implements BrowsingHistoryService {
                 String key = getHistoryKey(userId);
                 String historyJson = redisUtil.get(key);
 
-                if (historyJson != null) {
+                // 只有当 Redis 中有数据时才进行同步
+                if (historyJson != null && !historyJson.isEmpty()) {
                     List<BrowsingHistory> historyList = JSON.parseArray(historyJson, BrowsingHistory.class);
 
-                    // 先删除用户的所有历史记录
-                    browsingHistoryMapper.deleteByUserId(userId);
+                    // 只有在有历史记录时才删除和重新插入
+                    if (!historyList.isEmpty()) {
+                        // 先删除用户的所有历史记录
+                        browsingHistoryMapper.deleteByUserId(userId);
 
-                    // 重新插入
-                    for (BrowsingHistory history : historyList) {
-                        // 确保updateTime不为null
-                        if (history.getUpdateTime() == null) {
-                            Date now = new Date();
-                            if (history.getCreateTime() == null) {
-                                history.setCreateTime(now);
+                        // 重新插入
+                        for (BrowsingHistory history : historyList) {
+                            // 确保 updateTime 不为 null
+                            if (history.getUpdateTime() == null) {
+                                Date now = new Date();
+                                if (history.getCreateTime() == null) {
+                                    history.setCreateTime(now);
+                                }
+                                history.setUpdateTime(now);
                             }
-                            history.setUpdateTime(now);
+                            browsingHistoryMapper.insert(history);
                         }
-                        browsingHistoryMapper.insert(history);
                     }
                 }
+                // 如果 Redis 中没有数据，则不进行任何操作，保留 MySQL 中的数据
             } finally {
                 syncLock.unlock();
             }
