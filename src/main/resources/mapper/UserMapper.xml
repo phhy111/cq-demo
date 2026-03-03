@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="edu.cqie.cqdemo.mapper.UserMapper">
+    <update id="resetPassword">
+        UPDATE users
+        SET password = #{password}
+        WHERE id = #{id}
+    </update>
+    <update id="batchDisable">
+        UPDATE `users`
+        SET `user_status` = 1
+        WHERE `id` IN
+        <foreach collection="ids" item="userId" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </update>
     <select id="getUserName" resultType="java.lang.String">
         SELECT username
         FROM users
@@ -13,18 +26,20 @@
             GROUP BY DATE(created_at)
     </select>
     <select id="getUsersInfo" resultType="edu.cqie.cqdemo.entity.Users">
-        -- 查询普通用户的核心信息
         SELECT
-            id AS user_id,               -- 用户ID
-            username AS nickname,        -- 昵称
-            phone AS mobile,             -- 手机号
-            DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS register_time,  -- 注册时间（格式化）
-            ext3               -- 状态
+            id,
+            username,
+            phone,
+            email,
+            avatar_url,
+            created_at,
+            user_status ,
+            gender
         FROM
             users
         WHERE
-            role = 0                     -- 筛选普通用户（role=0）
+            role = 0
         ORDER BY
-            created_at DESC;             -- 按注册时间倒序排列
+            created_at DESC;
     </select>
 </mapper>

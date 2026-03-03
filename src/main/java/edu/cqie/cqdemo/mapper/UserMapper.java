@@ -48,4 +48,16 @@ public interface UserMapper extends BaseMapper<Users> {
      * 用户信息展示
      */
     List<Users> getUsersInfo();
+
+    /**
+     * 重置用户密码
+     * @param id
+     * @param password
+     */
+    boolean resetPassword( Long id, String password);
+    /**
+     * 批量禁用用户
+     * @param ids 用户ID列表
+     */
+    boolean batchDisable(@Param("ids") List<Long> ids);
 }

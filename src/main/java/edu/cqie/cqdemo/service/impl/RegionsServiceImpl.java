@@ -1,6 +1,7 @@
 package edu.cqie.cqdemo.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import edu.cqie.cqdemo.dto.ScenicsAndRegionDTO;
 import edu.cqie.cqdemo.entity.Regions;
 import edu.cqie.cqdemo.service.RegionsService;
 import edu.cqie.cqdemo.mapper.RegionsMapper;
@@ -32,6 +33,11 @@ public class RegionsServiceImpl extends ServiceImpl<RegionsMapper, Regions>
     @Override
     public List<Map<String, Object>> popularityComparison() {
         return regionsMapper.popularityComparison();
+    }
+
+    @Override
+    public List<ScenicsAndRegionDTO> getScenicsAndRegionName() {
+        return regionsMapper.getScenicsAndRegionName();
     }
 }
 
