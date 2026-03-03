@@ -5,30 +5,21 @@
     <select id="getAllStatus" resultType="edu.cqie.cqdemo.entity.FoodCategories">
         SELECT * FROM food_categories ORDER BY created_at DESC;
     </select>
-<!--    查询所有美食-->
-    <select id="selectFoods" resultType="edu.cqie.cqdemo.entity.FoodCategories">
-        SELECT food_categories.created_at,
-               food_categories.name,
-               food_categories.details,
-               food_categories.image,
-               categories.name FROM food_categories join categories on food_categories.category_id=categories.id where food_categories.status=1
-    </select>
-    <resultMap id="FoodWithCategoryMap" type="edu.cqie.cqdemo.entity.Food">
-        <id property="id" column="id"/>
-        <result property="foodId" column="food_id"/>
-        <result property="categoryId" column="category_id"/>
+    <resultMap id="FoodWithCategoryMap" type="edu.cqie.cqdemo.entity.FoodCategories">
         <result property="createdAt" column="created_at"/>
         <result property="name" column="food_name"/>
         <result property="details" column="details"/>
         <result property="image" column="image"/>
         <association property="categories" javaType="edu.cqie.cqdemo.entity.Categories">
-            <id property="id" column="category_id"/>
             <result property="name" column="category_name"/>
-            <result property="type" column="type"/>
-            <result property="code" column="code"/>
-            <result property="icon" column="icon"/>
-            <result property="sortOrder" column="sort_order"/>
-            <result property="status" column="category_status"/>
         </association>
     </resultMap>
+<!--    查询所有美食-->
+    <select id="selectFoods" resultMap="FoodWithCategoryMap">
+        SELECT food_categories.created_at,
+               food_categories.name as food_name,
+               food_categories.details,
+               food_categories.image,
+               categories.name as category_name FROM food_categories join categories on food_categories.category_id=categories.id where food_categories.status=1
+    </select>
 </mapper>
