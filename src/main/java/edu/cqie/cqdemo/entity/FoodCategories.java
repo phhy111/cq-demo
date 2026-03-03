@@ -59,5 +59,6 @@ public class FoodCategories {
      * 预留字段5
      */
     private String ext5;
+    private Categories categories;
 
 }

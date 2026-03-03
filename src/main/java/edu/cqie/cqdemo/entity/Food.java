@@ -49,4 +49,5 @@ public class Food {
     private String details;
     @TableField("image")
     private String image;
+    private Categories categories;
 }
