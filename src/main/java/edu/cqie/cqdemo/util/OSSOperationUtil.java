@@ -118,7 +118,6 @@ public class OSSOperationUtil {
     }
 
 
-
     /**
      * 辅助方法：判断文件是否为图片
      * @param fileName 文件名/对象名

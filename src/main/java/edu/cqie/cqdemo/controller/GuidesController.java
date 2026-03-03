@@ -8,11 +8,13 @@ import edu.cqie.cqdemo.entity.LoginUser;
 import edu.cqie.cqdemo.service.CollectionsService;
 import edu.cqie.cqdemo.service.GuidesService;
 import edu.cqie.cqdemo.service.LikesService;
+import edu.cqie.cqdemo.util.OSSOperationUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Date;
 import java.util.List;
@@ -38,6 +40,9 @@ public class GuidesController {
 
     @Autowired
     private RedisTemplate redisTemplate;
+
+    @Autowired
+    private OSSOperationUtil ossOperationUtil;
 
     /**
      * 获取攻略详情
@@ -393,8 +398,16 @@ public class GuidesController {
      * 保存攻略数据（新增或编辑）
      */
     @PostMapping("/saveGuide")
-    public Result saveGuide(@RequestBody Guides guide) {
+    public Result saveGuide(
+            @RequestPart(required = false) MultipartFile file,
+            @RequestPart Guides guide) {
         try {
+            // 图片上传到 OSS
+            if (file != null && !file.isEmpty()) {
+                String imageUrl = ossOperationUtil.upload(file, "guides_img/");
+                guide.setCoverImg(imageUrl);
+            }
+            
             if (guide.getId() != null) {
                 // 编辑攻略
                 guidesService.updateById(guide);

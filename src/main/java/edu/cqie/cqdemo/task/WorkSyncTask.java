@@ -178,28 +178,23 @@ public class WorkSyncTask implements ApplicationRunner {
             int syncCount = 0;
 
             for (String key : workKeys) {
-                // 解析Key，获取用户ID、状态和类型
-                // Key格式：user_works:{userId}:{status} 或 user_works:{userId}:{status}:{type}
+                // 解析 Key，获取用户 ID、状态和类型
+                // Key 格式：user_works:{userId}:{status}
                 String[] parts = key.split(":");
                 if (parts.length < 3) {
-                    log.warn("无效的作品Key格式：{}", key);
+                    log.warn("无效的作品 Key 格式：{}", key);
                     continue;
                 }
 
                 try {
-                    Long userId = Long.parseLong(parts[2]);
-                    Integer status = null;
+                    // parts[0]="user_works", parts[1]=userId, parts[2]=status
+                    Long userId = Long.parseLong(parts[1]);
+                    Integer status = Integer.parseInt(parts[2]);
                     String type = null;
                     
-                    // 检查数组长度，确保安全访问
-                    if (parts.length >= 4) {
-                        status = Integer.parseInt(parts[3]);
-                        if (parts.length > 4) {
-                            type = parts[4];
-                        }
-                    } else {
-                        log.warn("Key格式不完整，缺少状态信息：{}", key);
-                        continue;
+                    // 检查是否有 type 信息（扩展用途）
+                    if (parts.length > 3) {
+                        type = parts[3];
                     }
 
                     // 为每个用户创建同步锁，确保只有一个进程处理该用户的作品数据

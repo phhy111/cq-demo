@@ -547,10 +547,16 @@ public class UserController {
     }
     @GetMapping("/getUserInfo")
     public Result getUserInfo() {
-        if (userService.getUsersInfo() != null){
-            return Result.success(userService.getUsersInfo());
-        }else {
-            return Result.error("获取用户信息失败");
+        try {
+            List<Users> users = userService.getUsersInfo();
+            if (users != null) {
+                return Result.success(users);
+            } else {
+                return Result.success(new java.util.ArrayList<>());
+            }
+        } catch (Exception e) {
+            log.error("获取用户信息失败：", e);
+            return Result.error("获取用户信息失败：" + e.getMessage());
         }
     }
 

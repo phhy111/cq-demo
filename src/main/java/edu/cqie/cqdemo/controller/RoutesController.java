@@ -213,36 +213,42 @@ public class RoutesController {
      * 获取路线相关的攻略列表
      * 优先从Redis读取，提高性能
      */
+    /**
+     * 获取路线相关的攻略列表
+     * 只返回 status=1（已发布）的攻略
+     * @param routeId 路线 ID
+     * @return 攻略列表
+     */
     @GetMapping("/getRouteGuides")
     public Result getRouteGuides(Integer routeId) {
         try {
-            // 1. 规范拼接Redis Key
+            // 1. 规范拼接 Redis Key
             String redisKey = "guides:route:" + routeId;
 
-            // 2. 尝试从Redis读取
+            // 2. 尝试从 Redis 读取
             List<Guides> guidesList = (List<Guides>) redisTemplate.opsForValue().get(redisKey);
 
             if (guidesList != null) {
-                // 重置Redis Key的过期时间
+                // 重置 Redis Key 的过期时间
                 redisTemplate.expire(redisKey, 1, TimeUnit.MINUTES);
                 return Result.success(guidesList);
             } else {
-                // Redis中不存在，使用同步锁确保只有一个请求打到MySQL
+                // Redis 中不存在，使用同步锁确保只有一个请求打到 MySQL
                 String lockKey = "lock:guides:route:" + routeId;
                 Object lock = likeLocks.computeIfAbsent(lockKey, k -> new Object());
 
                 synchronized (lock) {
-                    // 再次检查Redis，防止并发情况下已经有其他请求更新了Redis
+                    // 再次检查 Redis，防止并发情况下已经有其他请求更新了 Redis
                     guidesList = (List<Guides>) redisTemplate.opsForValue().get(redisKey);
                     if (guidesList != null) {
                         redisTemplate.expire(redisKey, 1, TimeUnit.MINUTES);
                         return Result.success(guidesList);
                     }
 
-                    // Redis中确实不存在，从MySQL中查询
+                    // Redis 中确实不存在，从 MySQL 中查询（只查询 status=1 的已发布攻略）
                     guidesList = guidesService.getGuidesByRouteId(routeId);
 
-                    // 同步到Redis，设置1分钟过期时间
+                    // 同步到 Redis，设置 1 分钟过期时间
                     redisTemplate.opsForValue().set(redisKey, guidesList, 1, TimeUnit.MINUTES);
 
                     return Result.success(guidesList);
