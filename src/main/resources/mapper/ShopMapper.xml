@@ -46,4 +46,11 @@
                 foods.updated_at
              from foods join food_categories on foods.id=food_categories.food_id where food_categories.id=#{id}
    </select>
+<!--    更新点赞数-->
+    <update id="addlike">
+        update foods set like_count=like_count+1 where id=#{id}
+    </update>
+    <update id="deletelike">
+            update foods set like_count=like_count-1 where id= #{id}
+    </update>
 </mapper>
