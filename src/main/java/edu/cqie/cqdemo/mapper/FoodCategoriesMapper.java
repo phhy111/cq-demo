@@ -3,6 +3,7 @@ package edu.cqie.cqdemo.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import edu.cqie.cqdemo.entity.FoodCategories;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -10,5 +11,5 @@ import java.util.List;
 public interface FoodCategoriesMapper extends BaseMapper<FoodCategories> {
     List<FoodCategories> getAllStatus();
     List<FoodCategories>selectFoods();
-    FoodCategories selectone(Integer id);
+    FoodCategories selectone( Integer id);
 }

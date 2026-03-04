@@ -1,9 +1,13 @@
 package edu.cqie.cqdemo.mapper;
 
+import edu.cqie.cqdemo.entity.Shop;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 @Mapper
 //美食
 public interface ShopMapper {
-
+    List<Shop> selectshops(@Param("id") Integer id);
 }

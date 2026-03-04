@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.Date;
+
 //店铺表
 @TableName("foods")
 @Data
@@ -43,5 +45,17 @@ public class Shop {
     private  int view_count;
     @TableField("like_count")
     private int like_count;
+    @TableField("is_recommend")
+    private boolean is_recommend;
+    @TableField("is_hot")
+    private boolean is_hot;
+    @TableField("status")
+    private boolean status;
+    @TableField("sort_order")
+    private int sort_order;
+    @TableField("created_at")
+    private Date created_at;
+    @TableField("updated_at")
+    private Date updated_at;
 
 }
