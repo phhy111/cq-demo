@@ -6,6 +6,7 @@
         SELECT * FROM food_categories ORDER BY created_at DESC;
     </select>
     <resultMap id="FoodWithCategoryMap" type="edu.cqie.cqdemo.entity.FoodCategories">
+        <result property="id" column="id"/>
         <result property="createdAt" column="created_at"/>
         <result property="name" column="food_name"/>
         <result property="details" column="details"/>
@@ -16,10 +17,19 @@
     </resultMap>
 <!--    查询所有美食-->
     <select id="selectFoods" resultMap="FoodWithCategoryMap">
-        SELECT food_categories.created_at,
+        SELECT food_categories.id,
+               food_categories.created_at,
                food_categories.name as food_name,
                food_categories.details,
                food_categories.image,
                categories.name as category_name FROM food_categories join categories on food_categories.category_id=categories.id where food_categories.status=1
+    </select>
+    <select id="selectone" resultMap="FoodWithCategoryMap">
+        SELECT food_categories.id,
+               food_categories.created_at,
+               food_categories.name as food_name,
+               food_categories.details,
+               food_categories.image,
+               categories.name as category_name FROM food_categories join categories on food_categories.category_id=categories.id where food_categories.status=1 and food_categories.id=#{id}
     </select>
 </mapper>

@@ -76,5 +76,9 @@ public class FoodCategoriesController {
     public Result<List<FoodCategories>> selectFoods(){
           List<FoodCategories> foods = foodscategoriesService.selectFoods();
           return Result.success(foods);}
-
+    @PostMapping("/selectone/{id}")
+    public Result<FoodCategories> selectone(@PathVariable Integer id){
+        FoodCategories food = foodscategoriesService.selectone(id);
+        return Result.success(food);
+    }
 }

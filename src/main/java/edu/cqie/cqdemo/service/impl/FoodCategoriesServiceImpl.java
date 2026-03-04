@@ -27,4 +27,9 @@ public class FoodCategoriesServiceImpl extends ServiceImpl<FoodCategoriesMapper,
           return null;
       }
     }
+
+    @Override
+    public FoodCategories selectone(Integer id) {
+        return foodCategoriesMapper.selectone(id);
+    }
 }
