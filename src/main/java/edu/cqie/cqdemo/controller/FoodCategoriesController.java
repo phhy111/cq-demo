@@ -76,7 +76,7 @@ public class FoodCategoriesController {
     public Result<List<FoodCategories>> selectFoods(){
           List<FoodCategories> foods = foodscategoriesService.selectFoods();
           return Result.success(foods);}
-    
+
     /**
      * 更新美食的点赞数、收藏数和评论数
      */
@@ -89,6 +89,14 @@ public class FoodCategoriesController {
             e.printStackTrace();
             return Result.error("更新失败：" + e.getMessage());
         }
+    }
+    /**
+     * 根据id查询美食数据
+     */
+    @PostMapping("/selectone/{id}")
+    public Result<FoodCategories> selectone(@PathVariable Integer id){
+        FoodCategories food = foodscategoriesService.selectone(id);
+        return Result.success(food);
     }
 
 }
