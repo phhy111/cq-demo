@@ -10,4 +10,6 @@ import java.util.List;
 //美食
 public interface ShopMapper {
     List<Shop> selectshops(@Param("id") Integer id);
+    int addlike(@Param("id") Integer id);
+    int deletelike(@Param("id") Integer id);
 }

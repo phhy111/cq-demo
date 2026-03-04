@@ -32,4 +32,8 @@
                food_categories.image,
                categories.name as category_name FROM food_categories join categories on food_categories.category_id=categories.id where food_categories.status=1 and food_categories.id=#{id}
     </select>
+<!--    添加美食收藏-->
+    <insert id="addfoodselcet">
+        insert into collection(user_id,target_id,target_type,created_at) values(#{userid},#{targetid},2,#{createat})
+    </insert>
 </mapper>
