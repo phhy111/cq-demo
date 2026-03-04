@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="edu.cqie.cqdemo.mapper.CategoriesMapper">
 <!--    查询所有美食分类-->
-    <select id="selectAll" resultType="edu.cqie.cqdemo.entity.Categories">
+    <select id="selectcategories" resultType="edu.cqie.cqdemo.entity.Categories">
         SELECT name FROM categories
     </select>
 </mapper>
