@@ -26,11 +26,16 @@ public class FoodCategoriesServiceImpl extends ServiceImpl<FoodCategoriesMapper,
           return foodCategories;}else {
           return null;
       }
-    }
-    
+    } 
     @Override
     public void updateLikeCountAndCollectCount() {
         // 调用 Mapper 中的更新方法
         foodCategoriesMapper.updateLikeCountAndCollectCount();
+
+
+    @Override
+    public FoodCategories selectone(Integer id) {
+        return foodCategoriesMapper.selectone(id);
+
     }
 }

@@ -3,8 +3,47 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="edu.cqie.cqdemo.mapper.ShopMapper">
-<!--   店铺-->
-   <select id="selectFoods">
-
+   <resultMap id="shopditails" type="edu.cqie.cqdemo.entity.Shop">
+       <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="subtitle" column="subtitle"/>
+        <result property="cover_img" column="cover_img"/>
+       <result property="adress" column="adress"/>
+        <result property="discription" column="discription"/>
+        <result property="avg_price" column="avg_price"/>
+       <result property="open_time" column="open_time"/>
+        <result property="contact_phone" column="contact_phone"/>
+        <result property="score" column="score"/>
+        <result property="collect_count" column="collect_count"/>
+        <result property="comment_count" column="comment_count"/>
+        <result property="view_count" column="view_count"/>
+        <result property="like_count" column="like_count"/>
+        <result property="is_recommend" column="is_recommend"/>
+        <result property="is_hot" column="is_hot"/>
+        <result property="status" column="status"/>
+        <result property="created_at" column="created_at"/>
+        <result property="updated_at" column="updated_at"/>
+   </resultMap>
+<!--   查询包含美食的店铺-->
+   <select id="selectshops" resultMap="shopditails">
+      select foods.id,
+             foods.name,
+             foods.subtitle,
+             foods.cover_img,
+              foods.address,
+              foods.description,
+              foods.avg_price,
+              foods.open_time,
+              foods.contact_phone,
+              foods.score,
+              foods.collect_count,
+              foods.view_count,
+              foods.like_count,
+              foods.is_recommend,
+                foods.is_hot,
+                foods.status,
+                foods.created_at,
+                foods.updated_at
+             from foods join food_categories on foods.id=food_categories.food_id where food_categories.id=#{id}
    </select>
 </mapper>

@@ -4,6 +4,7 @@ package edu.cqie.cqdemo;
 
 import edu.cqie.cqdemo.mapper.FoodCategoriesMapper;
 import edu.cqie.cqdemo.service.AiService;
+import edu.cqie.cqdemo.service.ShopService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,13 +17,13 @@ public class CqDemoApplicationTests {
     @Autowired
     private AiService aiService;
     @Autowired
-    private FoodCategoriesMapper foodCategoriesMapper;
+    private ShopService shopService;
+
 
     @Test
 
     void contextLoads() {
+        System.out.println(shopService.selectShops(2));
 
-
-        System.out.println(foodCategoriesMapper.selectFoods());
 
 }}
