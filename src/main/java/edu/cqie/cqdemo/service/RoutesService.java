@@ -30,4 +30,6 @@ public interface RoutesService extends IService<Routes> {
 
     //查询所有状态的路线数据
     List<Routes> getAllRoutesWithAllStatus();
+
+    boolean deleteById(Integer id);
 }

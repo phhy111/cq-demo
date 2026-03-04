@@ -76,5 +76,19 @@ public class FoodCategoriesController {
     public Result<List<FoodCategories>> selectFoods(){
           List<FoodCategories> foods = foodscategoriesService.selectFoods();
           return Result.success(foods);}
+    
+    /**
+     * 更新美食的点赞数、收藏数和评论数
+     */
+    @PostMapping("/updateLikeCountAndCollectCount")
+    public Result updateLikeCountAndCollectCount() {
+        try {
+            foodscategoriesService.updateLikeCountAndCollectCount();
+            return Result.success("更新成功");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("更新失败：" + e.getMessage());
+        }
+    }
 
 }

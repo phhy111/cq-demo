@@ -1,6 +1,7 @@
 package edu.cqie.cqdemo.controller;
 
 import edu.cqie.cqdemo.common.Result;
+import edu.cqie.cqdemo.service.SensitiveWordService;
 import edu.cqie.cqdemo.dto.ScenicsCommentsDTO;
 import edu.cqie.cqdemo.dto.CommentsDTO;
 import edu.cqie.cqdemo.entity.Comments;
@@ -50,6 +51,9 @@ public class CommentsController {
     @Autowired
     private RedisTemplate redisTemplate;
 
+    @Autowired
+    private SensitiveWordService sensitiveWordService;
+
     // 用于存储点赞状态查询的同步锁，防止缓存穿透
     private final ConcurrentHashMap<String, Object> likeLocks = new ConcurrentHashMap<>();
 
@@ -98,8 +102,14 @@ public class CommentsController {
             }
             Long userId = jwtUtil.getUserIdFromToken(token);
 
-            // 2. 关键修复：将解析到的userId设置到comments实体中
+            // 2. 关键修复：将解析到的 userId 设置到 comments 实体中
             comments.setUserId(userId); // 之前漏掉了这一步！
+
+            // 2.5 敏感词检查
+            if (sensitiveWordService.containsSensitiveWord(comments.getContent())) {
+                List<String> sensitiveWords = sensitiveWordService.findSensitiveWords(comments.getContent());
+                return Result.error("评论包含敏感词：" + String.join(",", sensitiveWords));
+            }
 
             // 3. 填充时间（原有逻辑）
             comments.setCreatedAt(new Date());
@@ -139,6 +149,13 @@ public class CommentsController {
             if (success)
             {
                 Long userId = jwtUtil.getUserIdFromToken(token);
+                
+                // 敏感词检查
+                if (sensitiveWordService.containsSensitiveWord(comments.getContent())) {
+                    List<String> sensitiveWords = sensitiveWordService.findSensitiveWords(comments.getContent());
+                    return Result.error("评论包含敏感词");
+                }
+                
                 comments.setUserId(userId);
                 commentsService.addCommentWithUserInfo(comments);
                 // 查询用户信息
@@ -168,6 +185,13 @@ public class CommentsController {
                 return Result.error("无效的Token");
             }
             Long userId = jwtUtil.getUserIdFromToken(token);
+            
+            // 敏感词检查
+            if (sensitiveWordService.containsSensitiveWord(comments.getContent())) {
+                List<String> sensitiveWords = sensitiveWordService.findSensitiveWords(comments.getContent());
+                return Result.error("评论包含敏感词：" + String.join(",", sensitiveWords));
+            }
+            
             comments.setUserId(userId);
             commentsService.addCommentWithUserInfo(comments);
             // 查询用户信息

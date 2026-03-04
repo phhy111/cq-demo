@@ -53,5 +53,10 @@ public interface ScenicsMapper extends BaseMapper<Scenics> {
      * @return
      */
     public List<ScenicsDTO> getScenicsDetailInfoById(Integer id);
+    
+    /**
+     * 更新景点的点赞数、收藏数和评论数
+     */
+    public void updateLikeCountAndCollectCount();
 
 }

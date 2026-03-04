@@ -160,18 +160,19 @@ public class WorkSyncTask implements ApplicationRunner {
     }
 
     /**
-     * 同步Redis中的作品数据到MySQL
-     * 每1分35秒执行一次
+     * 同步 Redis 中的作品数据到 MySQL
+     * 每 1 分 35 秒执行一次
+     * 【修复】增加删除标记检查，防止已删除数据被重新同步
      */
-    @Scheduled(fixedRate = 95 * 1000) // 95秒 = 1分35秒
+    @Scheduled(fixedRate = 95 * 1000) // 95 秒 = 1 分 35 秒
     public void syncWorkData() {
         try {
-            log.info("开始同步Redis作品数据到MySQL");
+            log.info("开始同步 Redis 作品数据到 MySQL");
 
-            // 扫描所有作品相关的Redis Key
+            // 扫描所有作品相关的 Redis Key
             Set<String> workKeys = redisTemplate.keys("user_works:*");
             if (workKeys == null || workKeys.isEmpty()) {
-                log.info("没有发现作品相关的Redis Key");
+                log.info("没有发现作品相关的 Redis Key");
                 return;
             }
 
@@ -205,30 +206,50 @@ public class WorkSyncTask implements ApplicationRunner {
                     Object lock = syncLocks.computeIfAbsent(lockKey, k -> new Object());
 
                     synchronized (lock) {
-                        // 从Redis获取数据
+                        // 从 Redis 获取数据
                         List<Object> works = (List<Object>) redisTemplate.opsForValue().get(key);
                         if (works == null || works.isEmpty()) {
                             continue;
                         }
 
-                        // 同步到MySQL
+                        // 同步到 MySQL
                         for (Object work : works) {
                             if (work instanceof Routes) {
                                 Routes route = (Routes) work;
+                                
+                                // 【关键】检查是否有删除标记
+                                String deleteMarkKey = "deleted:route:" + route.getId();
+                                if (redisTemplate.hasKey(deleteMarkKey)) {
+                                    log.info("路线 ID={} 有删除标记，跳过同步", route.getId());
+                                    continue;
+                                }
+                                
+                                // 检查 MySQL 中是否存在
                                 if (routesService.getById(route.getId()) == null) {
-                                    // Redis有MySQL没有，增加到MySQL
+                                    // Redis 有 MySQL 没有，增加到 MySQL
                                     routesService.save(route);
+                                    log.info("同步路线到 MySQL：routeId={}", route.getId());
                                 }
                             } else if (work instanceof Guides) {
                                 Guides guide = (Guides) work;
+                                
+                                // 【关键】检查是否有删除标记
+                                String deleteMarkKey = "deleted:guide:" + guide.getId();
+                                if (redisTemplate.hasKey(deleteMarkKey)) {
+                                    log.info("攻略 ID={} 有删除标记，跳过同步", guide.getId());
+                                    continue;
+                                }
+                                
+                                // 检查 MySQL 中是否存在
                                 if (guidesService.getById(guide.getId()) == null) {
-                                    // Redis有MySQL没有，增加到MySQL
+                                    // Redis 有 MySQL 没有，增加到 MySQL
                                     guidesService.save(guide);
+                                    log.info("同步攻略到 MySQL：guideId={}", guide.getId());
                                 }
                             } else if (work instanceof Scenics) {
                                 Scenics scenic = (Scenics) work;
                                 if (scenicsService.getById(scenic.getId()) == null) {
-                                    // Redis有MySQL没有，增加到MySQL
+                                    // Redis 有 MySQL 没有，增加到 MySQL
                                     scenicsService.save(scenic);
                                 }
                             }
@@ -237,30 +258,31 @@ public class WorkSyncTask implements ApplicationRunner {
                         syncCount++;
                     }
                 } catch (NumberFormatException e) {
-                    log.warn("无效的用户ID或状态格式：{}", key);
+                    log.warn("无效的用户 ID 或状态格式：{}", key);
                     continue;
                 }
             }
 
-            log.info("Redis作品数据同步完成，同步了 {} 个用户的数据", syncCount);
+            log.info("Redis 作品数据同步完成，同步了 {} 个用户的数据", syncCount);
         } catch (Exception e) {
-            log.error("同步Redis作品数据到MySQL失败：", e);
+            log.error("同步 Redis 作品数据到 MySQL 失败：", e);
         }
     }
 
     /**
      * 清理 Redis 中不存在但 MySQL 中存在的数据
      * 每 10 分钟执行一次
+     * 【修复】不再删除 MySQL 数据，仅记录差异日志
      */
     @Scheduled(fixedRate = 10 * 60 * 1000) // 10 分钟
     public void cleanUpWorkData() {
         try {
-            log.info("开始清理 Redis 中不存在但 MySQL 中存在的作品数据");
+            log.info("开始检查 Redis 与 MySQL 作品数据一致性");
 
             // 先检查 Redis 中是否有作品数据
             Set<String> workKeys = redisTemplate.keys("user_works:*");
             if (workKeys == null || workKeys.isEmpty()) {
-                log.info("Redis 中没有作品数据，跳过清理操作，保留 MySQL 中的数据");
+                log.info("Redis 中没有作品数据，跳过检查");
                 return;
             }
 
@@ -268,39 +290,35 @@ public class WorkSyncTask implements ApplicationRunner {
             List<Routes> routesList = routesService.list();
             List<Guides> guidesList = guidesService.list();
 
-            int deleteCount = 0;
+            int missingInRedisCount = 0;
 
-            // 检查 Routes
+            // 检查 Routes - 仅记录日志，不删除
             for (Routes route : routesList) {
                 String redisKey = "user_works:" + route.getUserId() + ":" + route.getStatus();
                 if (!redisTemplate.hasKey(redisKey)) {
-                    // 仅当Redis中有其他作品数据时才删除
-                    // 确保Redis为空时不会删除MySQL数据
-                    if (!workKeys.isEmpty()) {
-                        routesService.removeById(route.getId());
-                        deleteCount++;
-                    }
+                    missingInRedisCount++;
+                    log.debug("Redis 中缺少路线缓存：routeId={}, userId={}, status={}", 
+                        route.getId(), route.getUserId(), route.getStatus());
                 }
             }
 
-            // 检查 Guides
+            // 检查 Guides - 仅记录日志，不删除
             for (Guides guide : guidesList) {
                 String redisKey = "user_works:" + guide.getUserId() + ":" + guide.getStatus();
                 if (!redisTemplate.hasKey(redisKey)) {
-                    // 仅当Redis中有其他作品数据时才删除
-                    // 确保Redis为空时不会删除MySQL数据
-                    if (!workKeys.isEmpty()) {
-                        guidesService.removeById(guide.getId());
-                        deleteCount++;
-                    }
+                    missingInRedisCount++;
+                    log.debug("Redis 中缺少攻略缓存：guideId={}, userId={}, status={}", 
+                        guide.getId(), guide.getUserId(), guide.getStatus());
                 }
             }
 
-            // Scenics 没有 userId 字段，跳过处理
-
-            log.info("作品数据清理完成，删除了 {} 条数据", deleteCount);
+            if (missingInRedisCount > 0) {
+                log.info("检查完成：MySQL 中有 {} 条作品在 Redis 中缺少缓存（不删除，仅记录）", missingInRedisCount);
+            } else {
+                log.info("检查完成：Redis 与 MySQL 数据一致");
+            }
         } catch (Exception e) {
-            log.error("清理作品数据失败：", e);
+            log.error("检查作品数据一致性失败：", e);
         }
     }
 }

@@ -1,6 +1,7 @@
 package edu.cqie.cqdemo.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import edu.cqie.cqdemo.service.SensitiveWordService;
 import edu.cqie.cqdemo.dto.ScenicsCommentsDTO;
 import edu.cqie.cqdemo.dto.CommentsDTO;
 import edu.cqie.cqdemo.entity.Comments;
@@ -32,6 +33,9 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments>
     @Autowired
     private RedisTemplate redisTemplate;
 
+    @Autowired
+    private SensitiveWordService sensitiveWordService;
+
     Users user = new Users();
 
     @Override
@@ -43,6 +47,11 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments>
     @Override
     public boolean addCommentWithUserInfo(Comments comments)
     {
+        // 检查评论内容是否包含敏感词
+        if (sensitiveWordService.containsSensitiveWord(comments.getContent())) {
+            throw new RuntimeException("评论包含敏感词，请修改后重新提交");
+        }
+        
         return commentsMapper.insertCommentsInfo(comments);
     }
 

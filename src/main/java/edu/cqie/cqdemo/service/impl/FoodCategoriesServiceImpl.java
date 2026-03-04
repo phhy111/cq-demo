@@ -27,4 +27,10 @@ public class FoodCategoriesServiceImpl extends ServiceImpl<FoodCategoriesMapper,
           return null;
       }
     }
+    
+    @Override
+    public void updateLikeCountAndCollectCount() {
+        // 调用 Mapper 中的更新方法
+        foodCategoriesMapper.updateLikeCountAndCollectCount();
+    }
 }

@@ -66,6 +66,14 @@ public class RoutesServiceImpl extends ServiceImpl<RoutesMapper, Routes> impleme
     public List<Routes> getAllRoutesWithAllStatus() {
         return routesMapper.getAllRoutesWithAllStatus();
     }
+
+    @Override
+    public boolean deleteById(Integer id) {
+        // 调用 MyBatis-Plus 的 deleteById(Serializable id) 方法
+        int affectedRows = routesMapper.deleteById(id);
+        // 受影响行数 > 0 表示删除成功
+        return affectedRows > 0;
+    }
 }
 
 

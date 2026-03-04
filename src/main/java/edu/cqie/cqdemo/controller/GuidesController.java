@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -373,6 +374,20 @@ public class GuidesController {
             return Result.error("查询失败");
         }
     }
+    
+    /**
+     * 更新攻略的点赞数、收藏数和评论数
+     */
+    @PostMapping("/updateLikeCountAndCollectCount")
+    public Result updateLikeCountAndCollectCount() {
+        try {
+            guidesService.updateLikeCountAndCollectCount();
+            return Result.success("更新成功");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("更新失败：" + e.getMessage());
+        }
+    }
 
     /**
      * 更新攻略状态，将待审核（2）状态更新为发布（1）状态
@@ -423,6 +438,96 @@ public class GuidesController {
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error("保存失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 删除攻略
+     * 【完整删除】同时删除 MySQL 和 Redis 中的所有相关数据
+     */
+    @DeleteMapping("/deleteGuide")
+    public Result deleteGuide(@RequestParam(required = false) Integer id) {
+        try {
+            // 1. 校验 ID 非空
+            if (id == null) {
+                return Result.error("删除失败：攻略 ID 不能为空");
+            }
+            // 2. 检查攻略是否存在
+            Guides guide = guidesService.getById(id);
+            if (guide == null) {
+                return Result.error("删除失败：ID 为" + id + "的攻略不存在");
+            }
+            // 3. 获取攻略信息用于删除 Redis 数据
+            Long userId = guide.getUserId();
+            Integer status = guide.getStatus();
+            
+            // 4. 先删除 MySQL 数据（使用事务保证原子性）
+            boolean isDeleted = guidesService.removeById(id);
+            if (isDeleted) {
+                // 5. 彻底清理 Redis 上的所有相关数据
+                try {
+                    // 5.1 删除点赞数据
+                    String likeRedisKey = "likes:2:" + id;
+                    redisTemplate.delete(likeRedisKey);
+                    
+                    // 5.2 删除收藏数据
+                    String collectRedisKey = "collections:2:" + id;
+                    redisTemplate.delete(collectRedisKey);
+                    
+                    // 5.3 删除浏览量数据
+                    String viewRedisKey = "views:guides:" + id;
+                    redisTemplate.delete(viewRedisKey);
+                    
+                    // 5.4 删除用户作品缓存（删除该用户所有状态的缓存，强制重新查询）
+                    if (userId != null) {
+                        redisTemplate.delete("user_works:" + userId + ":1");
+                        redisTemplate.delete("user_works:" + userId + ":2");
+                        redisTemplate.delete("user_works:" + userId + ":3");
+                    }
+                    
+                    // 5.5 深度清理：从所有 Redis 作品列表中移除该攻略（防止定时任务重新同步）
+                    cleanGuideFromAllRedisWorks(id);
+                    
+                    // 5.6 添加删除标记到 Redis（10 分钟过期），防止同步任务误删
+                    String deleteMarkKey = "deleted:guide:" + id;
+                    redisTemplate.opsForValue().set(deleteMarkKey, "deleted", 10, TimeUnit.MINUTES);
+                    
+                    log.info("删除攻略成功，已同步清理 Redis 数据：攻略 ID={}", id);
+                } catch (Exception e) {
+                    log.warn("删除 Redis 数据失败：{}", e.getMessage());
+                    // Redis 删除失败不影响主流程，只记录警告日志
+                }
+                return Result.success("删除成功");
+            } else {
+                return Result.error("删除失败：执行删除操作无数据变更");
+            }
+        } catch (Exception e) {
+            log.error("删除攻略失败（ID={}）：{}", id, e.getMessage(), e);
+            return Result.error("删除失败：" + e.getMessage());
+        }
+    }
+    
+    /**
+     * 从所有 Redis 作品列表中清理指定攻略
+     */
+    private void cleanGuideFromAllRedisWorks(Integer guideId) {
+        try {
+            Set<String> keys = redisTemplate.keys("user_works:*");
+            if (keys != null && !keys.isEmpty()) {
+                for (String key : keys) {
+                    List<Object> works = (List<Object>) redisTemplate.opsForValue().get(key);
+                    if (works != null && !works.isEmpty()) {
+                        boolean removed = works.removeIf(work -> 
+                            work instanceof Guides && ((Guides) work).getId().equals(guideId));
+                        if (removed) {
+                            redisTemplate.opsForValue().set(key, works);
+                            log.info("从 Redis 作品列表 {} 中移除已删除攻略 ID={}", key, guideId);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("清理 Redis 作品列表中的攻略失败：{}", e.getMessage());
         }
     }
 }

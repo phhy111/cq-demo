@@ -45,4 +45,9 @@ public interface ScenicsService extends IService<Scenics> {
      * @param id
      */
     public List<ScenicsDTO> getScenicsDetailInfoById(Integer id);
+    
+    /**
+     * 更新景点的点赞数、收藏数和评论数
+     */
+    void updateLikeCountAndCollectCount();
 }

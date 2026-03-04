@@ -1,26 +1,48 @@
 package edu.cqie.cqdemo.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import edu.cqie.cqdemo.common.Result;
 import edu.cqie.cqdemo.dto.ScenicsDTO;
+import edu.cqie.cqdemo.entity.Collections;
+import edu.cqie.cqdemo.entity.Likes;
+import edu.cqie.cqdemo.entity.LoginUser;
 import edu.cqie.cqdemo.entity.Scenics;
+import edu.cqie.cqdemo.service.CollectionsService;
+import edu.cqie.cqdemo.service.LikesService;
 import edu.cqie.cqdemo.service.ScenicsService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/scenics")
+@Slf4j
 public class ScenicsController {
-    /**
-     * 查询景点信息
-     * @return
-     */
     @Autowired
     private ScenicsService scenicsService;
+    
+    @Autowired
+    private LikesService likesService;
+    
+    @Autowired
+    private CollectionsService collectionsService;
+    
+    @Autowired
+    private RedisTemplate redisTemplate;
+    
+    private final Map<String, Object> likeLocks = new ConcurrentHashMap<>();
     /**
      * 获取所有景点信息
      * @return
@@ -124,6 +146,359 @@ public class ScenicsController {
             return Result.success(scenicsDTOList);
         }else {
             return Result.error("未查询到该景点详情信息");
+        }
+    }
+    
+    /**
+     * 更新景点的点赞数、收藏数和评论数
+     */
+    @PostMapping("/updateLikeCountAndCollectCount")
+    public Result updateLikeCountAndCollectCount() {
+        try {
+            scenicsService.updateLikeCountAndCollectCount();
+            return Result.success("更新成功");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("更新失败：" + e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取当前登录用户信息
+     */
+    private LoginUser getLoginUser() throws IllegalAccessException {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (!(principal instanceof LoginUser)) {
+            throw new IllegalAccessException("用户未登录或令牌无效");
+        }
+        return (LoginUser) principal;
+    }
+    
+    /**
+     * 增加景点点赞
+     */
+    @PostMapping("/addLikeScenics")
+    public Result addLikeScenics(@RequestBody Likes likes){
+        try {
+            LoginUser loginUser = getLoginUser();
+            Long currentUserId = loginUser.getId();
+
+            if (!currentUserId.equals(likes.getUserId())) {
+                return Result.error("无权为其他用户点赞");
+            }
+
+            String redisKey = "likes:" + likes.getTargetType() + ":" + likes.getTargetId();
+            Long isAdded = redisTemplate.opsForSet().add(redisKey, likes.getUserId());
+            redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
+
+            if (isAdded != null && isAdded == 1) {
+                likes.setCreatedAt(new Date());
+                likesService.save(likes);
+                log.info("点赞成功：userId={}, targetId={}, targetType={}", likes.getUserId(), likes.getTargetId(), likes.getTargetType());
+                return Result.success("点赞成功");
+            } else {
+                return Result.success("已点赞，无需重复操作");
+            }
+        } catch (IllegalAccessException e) {
+            return Result.error(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("点赞失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 取消景点点赞
+     */
+    @PostMapping("/removeLikeScenics")
+    public Result removeLikeScenics(@RequestBody Likes likes){
+        try {
+            LoginUser loginUser = getLoginUser();
+            Long currentUserId = loginUser.getId();
+
+            if (!currentUserId.equals(likes.getUserId())) {
+                return Result.error("无权为其他用户取消点赞");
+            }
+
+            String redisKey = "likes:" + likes.getTargetType() + ":" + likes.getTargetId();
+            Long isRemoved = redisTemplate.opsForSet().remove(redisKey, likes.getUserId());
+            redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
+
+            if (isRemoved != null && isRemoved == 1) {
+                QueryWrapper<Likes> queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("user_id", likes.getUserId());
+                queryWrapper.eq("target_id", likes.getTargetId());
+                queryWrapper.eq("target_type", likes.getTargetType());
+                boolean deleted = likesService.remove(queryWrapper);
+                log.info("从 MySQL 删除点赞记录：" + (deleted ? "成功" : "失败"));
+                return Result.success("取消点赞成功");
+            } else {
+                return Result.success("未点赞，无需取消操作");
+            }
+        } catch (IllegalAccessException e) {
+            return Result.error(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("取消点赞失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 检查用户是否点赞了某个景点
+     */
+    @PostMapping("/checkLikeStatus")
+    public Result checkLikeStatus(@RequestBody Likes likes){
+        try {
+            LoginUser loginUser = getLoginUser();
+            Long currentUserId = loginUser.getId();
+
+            if (!currentUserId.equals(likes.getUserId())) {
+                return Result.error("无权查询其他用户的点赞状态");
+            }
+
+            String redisKey = "likes:" + likes.getTargetType() + ":" + likes.getTargetId();
+            Boolean isLiked = redisTemplate.opsForSet().isMember(redisKey, likes.getUserId());
+
+            if (isLiked != null && isLiked) {
+                return Result.success(true);
+            } else if (isLiked != null && !isLiked) {
+                return Result.success(false);
+            } else {
+                String lockKey = "lock:like:" + likes.getTargetType() + ":" + likes.getTargetId() + ":" + likes.getUserId();
+                Object lock = likeLocks.computeIfAbsent(lockKey, k -> new Object());
+
+                synchronized (lock) {
+                    isLiked = redisTemplate.opsForSet().isMember(redisKey, likes.getUserId());
+                    if (isLiked != null) {
+                        return Result.success(isLiked);
+                    }
+
+                    QueryWrapper<Likes> queryWrapper = new QueryWrapper<>();
+                    queryWrapper.eq("user_id", likes.getUserId());
+                    queryWrapper.eq("target_id", likes.getTargetId());
+                    queryWrapper.eq("target_type", likes.getTargetType());
+                    Likes existingLike = likesService.getOne(queryWrapper);
+                    boolean mysqlLiked = existingLike != null;
+
+                    if (mysqlLiked) {
+                        redisTemplate.opsForSet().add(redisKey, likes.getUserId());
+                        redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
+                    }
+
+                    return Result.success(mysqlLiked);
+                }
+            }
+        } catch (IllegalAccessException e) {
+            return Result.error(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("查询点赞状态失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取景点的点赞数量
+     */
+    @GetMapping("/getLikeCount")
+    public Result getLikeCount(Integer targetType, Long targetId){
+        try {
+            String redisKey = "likes:" + targetType + ":" + targetId;
+            Long likeCount = redisTemplate.opsForSet().size(redisKey);
+
+            if (likeCount != null) {
+                redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
+                return Result.success(likeCount);
+            } else {
+                String lockKey = "lock:like:count:" + targetType + ":" + targetId;
+                Object lock = likeLocks.computeIfAbsent(lockKey, k -> new Object());
+
+                synchronized (lock) {
+                    likeCount = redisTemplate.opsForSet().size(redisKey);
+                    if (likeCount != null) {
+                        redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
+                        return Result.success(likeCount);
+                    }
+
+                    QueryWrapper<Likes> queryWrapper = new QueryWrapper<>();
+                    queryWrapper.eq("target_id", targetId);
+                    queryWrapper.eq("target_type", targetType);
+                    List<Likes> likesList = likesService.list(queryWrapper);
+                    long mysqlLikeCount = likesList.size();
+
+                    for (Likes like : likesList) {
+                        redisTemplate.opsForSet().add(redisKey, like.getUserId());
+                    }
+                    redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
+
+                    return Result.success(mysqlLikeCount);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("查询点赞数量失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 增加景点收藏
+     */
+    @PostMapping("/addCollections")
+    public Result addCollections(@RequestBody Collections collections){
+        try {
+            LoginUser loginUser = getLoginUser();
+            Long currentUserId = loginUser.getId();
+
+            if (!currentUserId.equals(collections.getUserId())) {
+                return Result.error("无权为其他用户添加收藏");
+            }
+
+            String redisKey = "collections:" + collections.getTargetType() + ":" + collections.getTargetId();
+            Long isAdded = redisTemplate.opsForSet().add(redisKey, collections.getUserId());
+            redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
+
+            if (isAdded != null && isAdded == 1) {
+                collections.setCreatedAt(new Date());
+                collectionsService.save(collections);
+                return Result.success("收藏成功");
+            } else {
+                return Result.success("已收藏，无需重复操作");
+            }
+        } catch (IllegalAccessException e) {
+            return Result.error(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("收藏失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 取消景点收藏
+     */
+    @PostMapping("/removeCollections")
+    public Result removeCollections(@RequestBody Collections collections){
+        try {
+            LoginUser loginUser = getLoginUser();
+            Long currentUserId = loginUser.getId();
+
+            if (!currentUserId.equals(collections.getUserId())) {
+                return Result.error("无权为其他用户取消收藏");
+            }
+
+            String redisKey = "collections:" + collections.getTargetType() + ":" + collections.getTargetId();
+            Long isRemoved = redisTemplate.opsForSet().remove(redisKey, collections.getUserId());
+            redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
+
+            if (isRemoved != null && isRemoved == 1) {
+                QueryWrapper<Collections> queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("user_id", collections.getUserId());
+                queryWrapper.eq("target_id", collections.getTargetId());
+                queryWrapper.eq("target_type", collections.getTargetType());
+                boolean deleted = collectionsService.remove(queryWrapper);
+                return Result.success("取消收藏成功");
+            } else {
+                return Result.success("未收藏，无需取消操作");
+            }
+        } catch (IllegalAccessException e) {
+            return Result.error(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("取消收藏失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 检查用户是否收藏了某个景点
+     */
+    @PostMapping("/checkCollectionStatus")
+    public Result checkCollectionStatus(@RequestBody Collections collections){
+        try {
+            LoginUser loginUser = getLoginUser();
+            Long currentUserId = loginUser.getId();
+
+            if (!currentUserId.equals(collections.getUserId())) {
+                return Result.error("无权查询其他用户的收藏状态");
+            }
+
+            String redisKey = "collections:" + collections.getTargetType() + ":" + collections.getTargetId();
+            Boolean isCollected = redisTemplate.opsForSet().isMember(redisKey, collections.getUserId());
+
+            if (isCollected != null && isCollected) {
+                return Result.success(true);
+            } else if (isCollected != null && !isCollected) {
+                return Result.success(false);
+            } else {
+                String lockKey = "lock:collection:" + collections.getTargetType() + ":" + collections.getTargetId() + ":" + collections.getUserId();
+                Object lock = likeLocks.computeIfAbsent(lockKey, k -> new Object());
+
+                synchronized (lock) {
+                    isCollected = redisTemplate.opsForSet().isMember(redisKey, collections.getUserId());
+                    if (isCollected != null) {
+                        return Result.success(isCollected);
+                    }
+
+                    QueryWrapper<Collections> queryWrapper = new QueryWrapper<>();
+                    queryWrapper.eq("user_id", collections.getUserId());
+                    queryWrapper.eq("target_id", collections.getTargetId());
+                    queryWrapper.eq("target_type", collections.getTargetType());
+                    Collections existingCollection = collectionsService.getOne(queryWrapper);
+                    boolean mysqlCollected = existingCollection != null;
+
+                    if (mysqlCollected) {
+                        redisTemplate.opsForSet().add(redisKey, collections.getUserId());
+                        redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
+                    }
+
+                    return Result.success(mysqlCollected);
+                }
+            }
+        } catch (IllegalAccessException e) {
+            return Result.error(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("查询收藏状态失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取景点的收藏数量
+     */
+    @GetMapping("/getCollectionCount")
+    public Result getCollectionCount(Integer targetType, Long targetId){
+        try {
+            String redisKey = "collections:" + targetType + ":" + targetId;
+            Long collectionCount = redisTemplate.opsForSet().size(redisKey);
+
+            if (collectionCount != null) {
+                redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
+                return Result.success(collectionCount);
+            } else {
+                String lockKey = "lock:collection:count:" + targetType + ":" + targetId;
+                Object lock = likeLocks.computeIfAbsent(lockKey, k -> new Object());
+
+                synchronized (lock) {
+                    collectionCount = redisTemplate.opsForSet().size(redisKey);
+                    if (collectionCount != null) {
+                        redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
+                        return Result.success(collectionCount);
+                    }
+
+                    QueryWrapper<Collections> queryWrapper = new QueryWrapper<>();
+                    queryWrapper.eq("target_id", targetId);
+                    queryWrapper.eq("target_type", targetType);
+                    List<Collections> collectionsList = collectionsService.list(queryWrapper);
+                    long mysqlCollectionCount = collectionsList.size();
+
+                    for (Collections collection : collectionsList) {
+                        redisTemplate.opsForSet().add(redisKey, collection.getUserId());
+                    }
+                    redisTemplate.expire(redisKey, 26, TimeUnit.DAYS);
+
+                    return Result.success(mysqlCollectionCount);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("查询收藏数量失败：" + e.getMessage());
         }
     }
 }

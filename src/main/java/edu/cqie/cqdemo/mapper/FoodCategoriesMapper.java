@@ -10,4 +10,9 @@ import java.util.List;
 public interface FoodCategoriesMapper extends BaseMapper<FoodCategories> {
     List<FoodCategories> getAllStatus();
     List<FoodCategories>selectFoods();
+    
+    /**
+     * 更新美食的点赞数、收藏数和评论数
+     */
+    void updateLikeCountAndCollectCount();
 }

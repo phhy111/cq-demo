@@ -63,4 +63,13 @@ public class ScenicsServiceImpl extends ServiceImpl<ScenicsMapper, Scenics> impl
     public List<ScenicsDTO> getScenicsDetailInfoById(Integer id) {
         return scenicsMapper.getScenicsDetailInfoById(id);
     }
+    
+    /**
+     * 更新景点的点赞数、收藏数和评论数
+     */
+    @Override
+    public void updateLikeCountAndCollectCount() {
+        // 调用 Mapper 中的更新方法
+        scenicsMapper.updateLikeCountAndCollectCount();
+    }
 }

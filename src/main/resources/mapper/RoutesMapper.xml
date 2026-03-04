@@ -54,14 +54,13 @@
         SELECT *
         FROM routes
         WHERE status = 1  -- 仅查询状态为1的记录
-        ORDER BY
-            (like_count * 0.5 + collect_count * 0.3 + comment_count * 0.2)ASC
+        ORDER BY (like_count * 0.5 + collect_count * 0.3 + comment_count * 0.2)ASC;
     </select>
     <select id="getAllHeatJ" resultType="edu.cqie.cqdemo.entity.Routes">
         SELECT *
         FROM routes
         WHERE status = 1  -- 仅查询状态为1的记录
-        ORDER BY (like_count * 0.5 + collect_count * 0.3 + comment_count * 0.2)DESC
+        ORDER BY (like_count * 0.5 + collect_count * 0.3 + comment_count * 0.2)DESC;
     </select>
     <select id="getRouteDetail" resultType="edu.cqie.cqdemo.entity.Routes">
         SELECT
@@ -79,6 +78,5 @@
     <select id="getAllRoutesWithAllStatus" resultType="edu.cqie.cqdemo.entity.Routes">
         SELECT r.*
         FROM routes r
-        ORDER BY r.updated_at DESC
     </select>
 </mapper>

@@ -47,4 +47,30 @@
         SET `view_count` = `view_count` + 1
         WHERE `id` = #{id};
     </update>
+    
+    <!-- 更新景点的点赞数、收藏数和评论数 -->
+    <update id="updateLikeCountAndCollectCount">
+        UPDATE scenics s
+        SET
+            -- 点赞数：查 likes 表，target_type=1
+            like_count = (
+                SELECT IFNULL(COUNT(*), 0)
+                FROM likes l
+                WHERE l.target_type = 1
+                  AND l.target_id = s.id
+            ),
+            collect_count = (
+                SELECT IFNULL(COUNT(*), 0)
+                FROM collections c
+                WHERE c.target_type = 1
+                  AND c.target_id = s.id
+            ),
+            comment_count = (
+                SELECT IFNULL(COUNT(*), 0)
+                FROM comments cm
+                WHERE cm.target_type = 1
+                  AND cm.target_id = s.id
+                  AND cm.status = 1
+            )
+    </update>
 </mapper>

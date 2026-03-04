@@ -74,25 +74,10 @@ public class LikeSyncTask {
                 }
             }
 
-            // 处理取消点赞的情况：删除 MySQL 中存在但 Redis 中不存在的点赞记录
-            // 只有在 Redis 中有数据时才执行此操作，防止 Redis 重启或数据过期时误删 MySQL 数据
-            if (keys != null && !keys.isEmpty()) {
-                // 获取 MySQL 中所有点赞记录
-                List<Likes> allLikesInMySQL = likesService.list();
-                for (Likes like : allLikesInMySQL) {
-                    String redisKey = "likes:" + like.getTargetType() + ":" + like.getTargetId();
-                    // 检查 Redis 中是否存在该点赞
-                    Boolean existsInRedis = redisTemplate.opsForSet().isMember(redisKey, like.getUserId());
-                    if (existsInRedis == null || !existsInRedis) {
-                        // Redis 中不存在，从 MySQL 中删除
-                        likesService.removeById(like.getId());
-                        log.info("从 MySQL 删除点赞记录：userId={}, targetId={}, targetType={}", like.getUserId(), like.getTargetId(), like.getTargetType());
-                    }
-                }
-            } else {
-                log.info("Redis 中无点赞数据，跳过删除操作，保留 MySQL 中的数据");
-            }
-
+            // 【修复】处理取消点赞的情况：仅当用户手动取消点赞时才删除，不根据 Redis 状态删除
+            // 原因：Redis 数据可能因为过期、重启等原因丢失，不能作为删除 MySQL 数据的依据
+            // 取消点赞操作应该由用户主动发起，通过 removeLikeRoutes/removeLikeGuides 接口处理
+            log.info("Redis 点赞数据同步到 MySQL 完成（仅新增，不删除）");
             log.info("Redis 点赞数据同步到 MySQL 成功");
         } catch (Exception e) {
             e.printStackTrace();

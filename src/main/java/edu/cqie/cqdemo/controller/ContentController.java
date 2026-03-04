@@ -8,6 +8,7 @@ import edu.cqie.cqdemo.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -201,6 +202,12 @@ public class ContentController {
                 List<Guides> guides = guidesService.list(new LambdaQueryWrapper<Guides>()
                     .eq(Guides::getStatus, 2)
                     .last("LIMIT " + ((page - 1) * pageSize) + ", " + pageSize));
+
+                List<FoodCategories> foodCategories = foodCategoriesService.list(new LambdaQueryWrapper<FoodCategories>()
+                        .eq(FoodCategories::getStatus,2)
+                        .last("LIMIT " + ((page - 1) * pageSize) + ", " + pageSize));
+
+
                 
                 result.put("scenic", scenics);
                 result.put("route", routes);

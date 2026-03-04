@@ -22,10 +22,16 @@ public class GuidesServiceImpl extends ServiceImpl<GuidesMapper, Guides> impleme
 
     @Override
     public List<Guides> getAllGuidesWithAllStatus() {
-        // 使用MyBatis-Plus的条件查询，不限制状态
+        // 使用 MyBatis-Plus 的条件查询，不限制状态
         com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Guides> queryWrapper = new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
         queryWrapper.orderByDesc("created_at");
 
         return baseMapper.selectList(queryWrapper);
+    }
+
+    @Override
+    public void updateLikeCountAndCollectCount() {
+        // 调用 Mapper 中的更新方法
+        baseMapper.updateLikeCountAndCollectCount();
     }
 }

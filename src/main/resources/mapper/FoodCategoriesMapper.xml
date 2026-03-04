@@ -9,5 +9,31 @@
     <select id="selectFoods" resultType="edu.cqie.cqdemo.entity.Food">
         SELECT * FROM food_categories where status=1;
     </select>
+    
+    <!-- 更新美食的点赞数、收藏数和评论数 -->
+    <update id="updateLikeCountAndCollectCount">
+        UPDATE food_categories f
+        SET
+            -- 点赞数：查 likes 表，target_type=2
+            like_count = (
+                SELECT IFNULL(COUNT(*), 0)
+                FROM likes l
+                WHERE l.target_type = 2
+                  AND l.target_id = f.id
+            ),
+            collect_count = (
+                SELECT IFNULL(COUNT(*), 0)
+                FROM collections c
+                WHERE c.target_type = 2
+                  AND c.target_id = f.id
+            ),
+            comment_count = (
+                SELECT IFNULL(COUNT(*), 0)
+                FROM comments cm
+                WHERE cm.target_type = 2
+                  AND cm.target_id = f.id
+                  AND cm.status = 1
+            )
+    </update>
 
 </mapper>
