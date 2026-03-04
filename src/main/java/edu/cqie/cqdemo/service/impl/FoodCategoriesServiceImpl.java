@@ -31,7 +31,7 @@ public class FoodCategoriesServiceImpl extends ServiceImpl<FoodCategoriesMapper,
     public void updateLikeCountAndCollectCount() {
         // 调用 Mapper 中的更新方法
         foodCategoriesMapper.updateLikeCountAndCollectCount();
-
+    }
 
     @Override
     public FoodCategories selectone(Integer id) {

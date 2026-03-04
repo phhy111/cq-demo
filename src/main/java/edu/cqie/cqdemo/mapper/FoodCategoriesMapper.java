@@ -18,4 +18,6 @@ public interface FoodCategoriesMapper extends BaseMapper<FoodCategories> {
 
     FoodCategories selectone( Integer id);
 
+    void updateLikeCountAndCollectCount();
+
 }
