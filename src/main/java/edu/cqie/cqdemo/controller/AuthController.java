@@ -1,6 +1,7 @@
 package edu.cqie.cqdemo.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import edu.cqie.cqdemo.annotation.RedisLog;
 import edu.cqie.cqdemo.common.Result;
 import edu.cqie.cqdemo.dto.LoginDTO;
 import edu.cqie.cqdemo.dto.RegisterDTO;
@@ -61,8 +62,9 @@ public class AuthController {
 
 
     /**
-     * 登录接口（保持不变，登录仍用JSON接收）
+     * 登录接口（保持不变，登录仍用 JSON 接收）
      */
+    @RedisLog(type = "INFO", module = "USER")
     @PostMapping("/login")
     public Result<java.util.Map<String, Object>> login(@Valid @RequestBody LoginDTO loginDTO, HttpServletRequest request) {
         try {
@@ -159,8 +161,9 @@ public class AuthController {
 
     /**
      * 注册接口（核心优化）
-     * 移除@RequestBody：适配FormData接收文件（MultipartFile）
+     * 移除@RequestBody：适配 FormData 接收文件（MultipartFile）
      */
+    @RedisLog(type = "INFO", module = "USER")
     @PostMapping("/register")
     public Result<String> register(@Valid RegisterDTO registerDTO) {
         try {

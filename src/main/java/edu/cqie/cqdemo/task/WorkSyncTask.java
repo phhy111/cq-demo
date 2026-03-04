@@ -206,52 +206,71 @@ public class WorkSyncTask implements ApplicationRunner {
                     Object lock = syncLocks.computeIfAbsent(lockKey, k -> new Object());
 
                     synchronized (lock) {
-                        // 从 Redis 获取数据
-                        List<Object> works = (List<Object>) redisTemplate.opsForValue().get(key);
+                        // 从 Redis 获取数据 - 增加异常处理
+                        List<Object> works = null;
+                        try {
+                            works = (List<Object>) redisTemplate.opsForValue().get(key);
+                        } catch (Exception e) {
+                            log.error("从 Redis 读取数据失败，JSON 解析错误：key={}, error={}", key, e.getMessage());
+                            // 数据损坏，删除该 key
+                            try {
+                                redisTemplate.delete(key);
+                                log.info("已删除损坏的 Redis 数据：{}", key);
+                            } catch (Exception deleteEx) {
+                                log.warn("删除损坏的 Redis 数据失败：{}", key);
+                            }
+                            continue;
+                        }
+                        
                         if (works == null || works.isEmpty()) {
                             continue;
                         }
 
                         // 同步到 MySQL
                         for (Object work : works) {
-                            if (work instanceof Routes) {
-                                Routes route = (Routes) work;
-                                
-                                // 【关键】检查是否有删除标记
-                                String deleteMarkKey = "deleted:route:" + route.getId();
-                                if (redisTemplate.hasKey(deleteMarkKey)) {
-                                    log.info("路线 ID={} 有删除标记，跳过同步", route.getId());
-                                    continue;
+                            try {
+                                if (work instanceof Routes) {
+                                    Routes route = (Routes) work;
+                                    
+                                    // 【关键】检查是否有删除标记
+                                    String deleteMarkKey = "deleted:route:" + route.getId();
+                                    if (redisTemplate.hasKey(deleteMarkKey)) {
+                                        log.info("路线 ID={} 有删除标记，跳过同步", route.getId());
+                                        continue;
+                                    }
+                                    
+                                    // 检查 MySQL 中是否存在
+                                    if (routesService.getById(route.getId()) == null) {
+                                        // Redis 有 MySQL 没有，增加到 MySQL
+                                        routesService.save(route);
+                                        log.info("同步路线到 MySQL: routeId={}", route.getId());
+                                    }
+                                } else if (work instanceof Guides) {
+                                    Guides guide = (Guides) work;
+                                    
+                                    // 【关键】检查是否有删除标记
+                                    String deleteMarkKey = "deleted:guide:" + guide.getId();
+                                    if (redisTemplate.hasKey(deleteMarkKey)) {
+                                        log.info("攻略 ID={} 有删除标记，跳过同步", guide.getId());
+                                        continue;
+                                    }
+                                    
+                                    // 检查 MySQL 中是否存在
+                                    if (guidesService.getById(guide.getId()) == null) {
+                                        // Redis 有 MySQL 没有，增加到 MySQL
+                                        guidesService.save(guide);
+                                        log.info("同步攻略到 MySQL: guideId={}", guide.getId());
+                                    }
+                                } else if (work instanceof Scenics) {
+                                    Scenics scenic = (Scenics) work;
+                                    if (scenicsService.getById(scenic.getId()) == null) {
+                                        // Redis 有 MySQL 没有，增加到 MySQL
+                                        scenicsService.save(scenic);
+                                    }
                                 }
-                                
-                                // 检查 MySQL 中是否存在
-                                if (routesService.getById(route.getId()) == null) {
-                                    // Redis 有 MySQL 没有，增加到 MySQL
-                                    routesService.save(route);
-                                    log.info("同步路线到 MySQL：routeId={}", route.getId());
-                                }
-                            } else if (work instanceof Guides) {
-                                Guides guide = (Guides) work;
-                                
-                                // 【关键】检查是否有删除标记
-                                String deleteMarkKey = "deleted:guide:" + guide.getId();
-                                if (redisTemplate.hasKey(deleteMarkKey)) {
-                                    log.info("攻略 ID={} 有删除标记，跳过同步", guide.getId());
-                                    continue;
-                                }
-                                
-                                // 检查 MySQL 中是否存在
-                                if (guidesService.getById(guide.getId()) == null) {
-                                    // Redis 有 MySQL 没有，增加到 MySQL
-                                    guidesService.save(guide);
-                                    log.info("同步攻略到 MySQL：guideId={}", guide.getId());
-                                }
-                            } else if (work instanceof Scenics) {
-                                Scenics scenic = (Scenics) work;
-                                if (scenicsService.getById(scenic.getId()) == null) {
-                                    // Redis 有 MySQL 没有，增加到 MySQL
-                                    scenicsService.save(scenic);
-                                }
+                            } catch (Exception e) {
+                                log.error("处理单个作品时出错：work={}, error={}", work, e.getMessage());
+                                // 继续处理下一个作品
                             }
                         }
 

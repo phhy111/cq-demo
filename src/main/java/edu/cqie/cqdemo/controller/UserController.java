@@ -1,5 +1,6 @@
 package edu.cqie.cqdemo.controller;
 
+import edu.cqie.cqdemo.annotation.RedisLog;
 import edu.cqie.cqdemo.common.Result;
 import edu.cqie.cqdemo.config.SecurityConfig;
 import edu.cqie.cqdemo.entity.Collections;
@@ -81,6 +82,7 @@ public class UserController {
     /**
      * 切换用户收藏状态（关注/取消关注）
      */
+    @RedisLog(type = "INFO", module = "USER")
     @PostMapping("/toggleUserCollection")
     public Result toggleUserCollection(@RequestBody Collections collection) {
         try {

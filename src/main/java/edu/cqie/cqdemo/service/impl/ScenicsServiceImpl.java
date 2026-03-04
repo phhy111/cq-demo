@@ -5,13 +5,17 @@ import edu.cqie.cqdemo.dto.ScenicsDTO;
 import edu.cqie.cqdemo.entity.Scenics;
 import edu.cqie.cqdemo.mapper.ScenicsMapper;
 import edu.cqie.cqdemo.service.ScenicsService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 
 @Service
+@Slf4j
 public class ScenicsServiceImpl extends ServiceImpl<ScenicsMapper, Scenics> implements ScenicsService {
     /**
      * 获取主页轮播图信息
@@ -19,6 +23,9 @@ public class ScenicsServiceImpl extends ServiceImpl<ScenicsMapper, Scenics> impl
      */
     @Autowired
     private ScenicsMapper scenicsMapper;
+    
+    @Autowired
+    private RedisTemplate redisTemplate;
     @Override
     public List<Scenics> getSlideShowInfo() {
         return scenicsMapper.getSlideShowInfo();
@@ -66,10 +73,29 @@ public class ScenicsServiceImpl extends ServiceImpl<ScenicsMapper, Scenics> impl
     
     /**
      * 更新景点的点赞数、收藏数和评论数
+     * @param id 景点 ID
      */
     @Override
-    public void updateLikeCountAndCollectCount() {
-        // 调用 Mapper 中的更新方法
-        scenicsMapper.updateLikeCountAndCollectCount();
+    public void updateLikeCountAndCollectCount(Integer id) {
+        // 调用 Mapper 中的更新方法，更新数据库
+        scenicsMapper.updateLikeCountAndCollectCount(id);
+        
+        // 更新 Redis 中的点赞数
+        String likeRedisKey = "likes:1:" + id;
+        Long likeCount = redisTemplate.opsForSet().size(likeRedisKey);
+        if (likeCount == null) {
+            likeCount = 0L;
+        }
+        redisTemplate.expire(likeRedisKey, 26, TimeUnit.DAYS);
+        
+        // 更新 Redis 中的收藏数
+        String collectRedisKey = "collections:1:" + id;
+        Long collectCount = redisTemplate.opsForSet().size(collectRedisKey);
+        if (collectCount == null) {
+            collectCount = 0L;
+        }
+        redisTemplate.expire(collectRedisKey, 26, TimeUnit.DAYS);
+        
+        log.info("更新景点 ID={} 的点赞数={}、收藏数={}", id, likeCount, collectCount);
     }
 }

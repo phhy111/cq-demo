@@ -49,10 +49,9 @@
     </update>
     
     <!-- 更新景点的点赞数、收藏数和评论数 -->
-    <update id="updateLikeCountAndCollectCount">
+    <update id="updateLikeCountAndCollectCount" parameterType="java.lang.Integer">
         UPDATE scenics s
         SET
-            -- 点赞数：查 likes 表，target_type=1
             like_count = (
                 SELECT IFNULL(COUNT(*), 0)
                 FROM likes l
@@ -72,5 +71,6 @@
                   AND cm.target_id = s.id
                   AND cm.status = 1
             )
+        WHERE s.id = #{id}
     </update>
 </mapper>

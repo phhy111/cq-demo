@@ -56,7 +56,9 @@ public interface ScenicsMapper extends BaseMapper<Scenics> {
     
     /**
      * 更新景点的点赞数、收藏数和评论数
+     * @param id 景点 ID
+     * @return 是否更新成功
      */
-    public void updateLikeCountAndCollectCount();
+    public boolean updateLikeCountAndCollectCount(Integer id);
 
 }

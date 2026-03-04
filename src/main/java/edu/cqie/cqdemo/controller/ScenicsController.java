@@ -1,6 +1,7 @@
 package edu.cqie.cqdemo.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import edu.cqie.cqdemo.annotation.RedisLog;
 import edu.cqie.cqdemo.common.Result;
 import edu.cqie.cqdemo.dto.ScenicsDTO;
 import edu.cqie.cqdemo.entity.Collections;
@@ -152,10 +153,11 @@ public class ScenicsController {
     /**
      * 更新景点的点赞数、收藏数和评论数
      */
+    @RedisLog(type = "INFO", module = "SCENIC")
     @PostMapping("/updateLikeCountAndCollectCount")
-    public Result updateLikeCountAndCollectCount() {
+    public Result updateLikeCountAndCollectCount(Integer id) {
         try {
-            scenicsService.updateLikeCountAndCollectCount();
+            scenicsService.updateLikeCountAndCollectCount(id);
             return Result.success("更新成功");
         } catch (Exception e) {
             e.printStackTrace();
@@ -177,6 +179,7 @@ public class ScenicsController {
     /**
      * 增加景点点赞
      */
+    @RedisLog(type = "INFO", module = "SCENIC")
     @PostMapping("/addLikeScenics")
     public Result addLikeScenics(@RequestBody Likes likes){
         try {
@@ -210,6 +213,7 @@ public class ScenicsController {
     /**
      * 取消景点点赞
      */
+    @RedisLog(type = "INFO", module = "SCENIC")
     @PostMapping("/removeLikeScenics")
     public Result removeLikeScenics(@RequestBody Likes likes){
         try {
@@ -342,6 +346,7 @@ public class ScenicsController {
     /**
      * 增加景点收藏
      */
+    @RedisLog(type = "INFO", module = "SCENIC")
     @PostMapping("/addCollections")
     public Result addCollections(@RequestBody Collections collections){
         try {
@@ -374,6 +379,7 @@ public class ScenicsController {
     /**
      * 取消景点收藏
      */
+    @RedisLog(type = "INFO", module = "SCENIC")
     @PostMapping("/removeCollections")
     public Result removeCollections(@RequestBody Collections collections){
         try {

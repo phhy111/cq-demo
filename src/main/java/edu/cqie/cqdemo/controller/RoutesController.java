@@ -2,6 +2,7 @@ package edu.cqie.cqdemo.controller;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import edu.cqie.cqdemo.annotation.RedisLog;
 import edu.cqie.cqdemo.common.Result;
 import edu.cqie.cqdemo.entity.Collections;
 import edu.cqie.cqdemo.entity.Guides;
@@ -251,6 +252,7 @@ public class RoutesController {
         }
     }
 
+    @RedisLog(type = "INFO", module = "ROUTE")
     @PostMapping("/addLikeRoutes")
     public Result addLikeRoutes(@RequestBody Likes likes) {
         try {
@@ -281,6 +283,7 @@ public class RoutesController {
         }
     }
 
+    @RedisLog(type = "INFO", module = "ROUTE")
     @PostMapping("/removeLikeRoutes")
     public Result removeLikeRoutes(@RequestBody Likes likes) {
         try {
@@ -418,6 +421,7 @@ public class RoutesController {
         }
     }
 
+    @RedisLog(type = "INFO", module = "ROUTE")
     @PostMapping("/addCollections")
     public Result addCollections(@RequestBody Collections collections) {
         try {
@@ -447,6 +451,7 @@ public class RoutesController {
         }
     }
 
+    @RedisLog(type = "INFO", module = "ROUTE")
     @PostMapping("/removeCollections")
     public Result removeCollections(@RequestBody Collections collections) {
         try {
@@ -649,6 +654,7 @@ public class RoutesController {
         }
     }
 
+    @RedisLog(type = "INFO", module = "ROUTE")
     @PostMapping("/saveRoute")
     public Result saveRoute(
             @RequestPart(required = false) MultipartFile file,
@@ -773,6 +779,7 @@ public class RoutesController {
      * 删除路线
      * 【完整删除】同时删除 MySQL 和 Redis 中的所有相关数据
      */
+    @RedisLog(type = "INFO", module = "ROUTE")
     @DeleteMapping("/deleteRoute")
     public Result deleteRoute(@RequestParam Integer id) {
         try {

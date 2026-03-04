@@ -48,6 +48,7 @@ public interface ScenicsService extends IService<Scenics> {
     
     /**
      * 更新景点的点赞数、收藏数和评论数
+     * @param id 景点 ID
      */
-    void updateLikeCountAndCollectCount();
+    void updateLikeCountAndCollectCount(Integer id);
 }

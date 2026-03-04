@@ -1,5 +1,6 @@
 package edu.cqie.cqdemo.controller;
 
+import edu.cqie.cqdemo.annotation.RedisLog;
 import edu.cqie.cqdemo.common.Result;
 import edu.cqie.cqdemo.service.SensitiveWordService;
 import edu.cqie.cqdemo.dto.ScenicsCommentsDTO;
@@ -88,6 +89,7 @@ public class CommentsController {
      * @param comments 评论信息
      * @return 添加结果
      */
+    @RedisLog(type = "INFO", module = "COMMENT")
     @PostMapping("/AddCommentsInfo")
     @Transactional(rollbackFor = Exception.class)
     public Result<Boolean> addCommentsInfo(
@@ -136,6 +138,7 @@ public class CommentsController {
         }
     }
 
+    @RedisLog(type = "INFO", module = "COMMENT")
     @PostMapping("/addRouteComment")
     public Result<?> addCommentsInfo(@RequestBody Comments comments,HttpServletRequest request) {
         try
@@ -177,6 +180,7 @@ public class CommentsController {
         }
     }
 
+    @RedisLog(type = "INFO", module = "COMMENT")
     @PostMapping("/replyComment")
     public Result<?> replyComment(@RequestBody Comments comments, HttpServletRequest request) {
         try {
