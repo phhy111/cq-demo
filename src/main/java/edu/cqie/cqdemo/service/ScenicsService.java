@@ -1,9 +1,12 @@
 package edu.cqie.cqdemo.service;
 
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
+import edu.cqie.cqdemo.dto.ScenicsAndRegionDTO;
 import edu.cqie.cqdemo.dto.ScenicsDTO;
 import edu.cqie.cqdemo.entity.Scenics;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -45,4 +48,26 @@ public interface ScenicsService extends IService<Scenics> {
      * @param id
      */
     public List<ScenicsDTO> getScenicsDetailInfoById(Integer id);
+    /**
+     * 多表关联分页查询
+     * @param pageNum 页码
+     * @param pageSize 每页条数
+     * @return 分页结果
+     */
+    public IPage<ScenicsAndRegionDTO> selectScenicsAndRegionPage(Integer pageNum, Integer pageSize);
+    /**
+     * 新增景点信息
+     * @param scenics
+     */
+    public boolean addScenicsInfo(Scenics scenics);
+    /**
+     * 批量删除景点信息
+     * @param id
+     */
+    public boolean deleteScenicsInfo(List<Integer> id);
+    /**
+     * 修改景点信息
+     * @param scenics
+     */
+    public boolean updateScenicsInfo(Scenics scenics);
 }

@@ -2,9 +2,12 @@ package edu.cqie.cqdemo.mapper;
 
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import edu.cqie.cqdemo.dto.ScenicsAndRegionDTO;
 import edu.cqie.cqdemo.dto.ScenicsDTO;
 import edu.cqie.cqdemo.entity.Scenics;
 import org.apache.ibatis.annotations.Mapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import java.util.List;
 
@@ -53,5 +56,25 @@ public interface ScenicsMapper extends BaseMapper<Scenics> {
      * @return
      */
     public List<ScenicsDTO> getScenicsDetailInfoById(Integer id);
-
+    /**
+     * 多表关联分页查询
+     * @param page 分页对象（MP 会自动解析分页参数）
+     * @return 分页结果
+     */
+    IPage<ScenicsAndRegionDTO> selectScenicsAndRegionPage(Page<ScenicsAndRegionDTO> page);
+    /**
+     * 新增景点
+     * @return
+     */
+    boolean addScenics(Scenics scenics);
+    /**
+     * 批量删除景点
+     * @return
+     */
+    boolean deleteScenics(List<Integer> id);
+    /**
+     * 修改景点信息
+     * @return
+     */
+    boolean updateScenics(Scenics scenics);
 }

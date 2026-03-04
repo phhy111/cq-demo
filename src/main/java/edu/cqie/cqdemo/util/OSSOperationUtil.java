@@ -9,6 +9,7 @@ import com.aliyun.oss.model.PutObjectRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
@@ -115,6 +116,15 @@ public class OSSOperationUtil {
      */
     public String upload(MultipartFile file) {
         return upload(file, "comments_img/");
+    }
+
+    /**
+     * 上传景点封面图片到阿里云 OSS（默认目录）
+     * @param file
+     * @return
+     */
+    public String uploadScenicsCoverImg(MultipartFile file) {
+        return upload(file, "scenics_cover_img/");
     }
 
 

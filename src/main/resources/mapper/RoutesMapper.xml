@@ -36,7 +36,7 @@
         ORDER BY
             composite_score DESC
             -- 取得分最高的前5条
-            LIMIT 5;
+            LIMIT 5
     </select>
     <select id="getRoutesListInfoByName" resultType="edu.cqie.cqdemo.entity.Routes">
         SELECT *
