@@ -98,5 +98,34 @@ public class FoodCategoriesController {
         FoodCategories food = foodscategoriesService.selectone(id);
         return Result.success(food);
     }
-
+    @PostMapping("/addfoodselcet")
+    public Result<String> addfoodselcet(@RequestParam Integer targetid){
+        System.out.println("传入的美食id"+targetid);
+        int result=foodscategoriesService.addfoodselcet(targetid);
+        if(result>0){
+            return Result.success("成功添加收藏");
+        }else {
+            return Result.success("添加收藏失败");
+        }
+    }
+    /**
+     * 取消美食收藏
+     */
+    @PostMapping("/deletefoodselcet")
+    public Result<String> deletefoodselcet(@RequestParam Integer targetid){
+        int result=foodscategoriesService.deletefoodselcet(targetid);
+        if(result>0){
+            return Result.success("成功删除收藏");
+        }else {
+            return Result.success("删除收藏失败");
+        }
+    }
+    /**
+     * 判断当前美食是否已收藏
+     */
+    @PostMapping("/selectfoodselcet")
+    public Result<Integer> selectfoodselcet(@RequestParam Integer targetid){
+        int result=foodscategoriesService.selectfoodselcet(targetid);
+        return Result.success(result);
+    }
 }

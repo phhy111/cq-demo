@@ -18,6 +18,8 @@ public interface FoodCategoriesService extends IService<FoodCategories> {
 
     FoodCategories selectone(Integer id);
 
-    int addfoodselcet(Integer userid ,Integer targetid, Date date);
+    int addfoodselcet( Integer targetid);
+    int deletefoodselcet(Integer targetid);
+    int selectfoodselcet(Integer targetid);
 
 }
