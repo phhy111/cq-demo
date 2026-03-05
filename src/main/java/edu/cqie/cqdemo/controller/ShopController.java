@@ -37,4 +37,9 @@ public class ShopController {
             return Result.error("删除失败");
         }
     }
+    //查询店铺详情
+    @GetMapping("/selectshopdetails/{id}")
+    public Result<Shop> selectshopdetails(@PathVariable Integer id) {
+        return Result.success(shopService.selectshopdetails(id));
+    }
 }

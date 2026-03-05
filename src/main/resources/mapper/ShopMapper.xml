@@ -8,8 +8,8 @@
         <result property="name" column="name"/>
         <result property="subtitle" column="subtitle"/>
         <result property="cover_img" column="cover_img"/>
-       <result property="adress" column="adress"/>
-        <result property="discription" column="discription"/>
+       <result property="address" column="address"/>
+        <result property="description" column="description"/>
         <result property="avg_price" column="avg_price"/>
        <result property="open_time" column="open_time"/>
         <result property="contact_phone" column="contact_phone"/>
@@ -53,4 +53,25 @@
     <update id="deletelike">
             update foods set like_count=like_count-1 where id= #{id}
     </update>
+<!--    查询店铺详情信息-->
+    <select id="selectshopdetails" resultMap="shopditails">
+        select foods.id,
+               foods.name,
+               foods.subtitle,
+               foods.cover_img,
+               foods.address,
+               foods.description,
+               foods.avg_price,
+               foods.open_time,
+               foods.contact_phone,
+               foods.score,
+               foods.collect_count,
+               foods.view_count,
+               foods.like_count,
+               foods.is_recommend,
+               foods.is_hot,
+               foods.status,
+               foods.created_at,
+               foods.updated_at from foods where foods.id=#{id}
+    </select>
 </mapper>

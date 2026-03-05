@@ -38,4 +38,14 @@ public class ShopServiceImpI implements ShopService {
     public int deletelike(Integer id) {
         return shopMapper.deletelike(id);
     }
+
+    @Override
+    public Shop selectshopdetails(Integer id) {
+        Shop shopdetails=shopMapper.selectshopdetails(id);
+        if (shopdetails!=null){
+            return shopdetails;
+        }else {
+            return null;
+        }
+    }
 }

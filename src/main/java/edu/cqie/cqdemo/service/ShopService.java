@@ -8,4 +8,5 @@ public interface ShopService {
     List<Shop> selectShops(Integer id);
     int addlike(Integer id);
     int deletelike(Integer id);
+    Shop selectshopdetails(Integer id);
 }
