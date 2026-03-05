@@ -510,6 +510,8 @@ public class ScenicsController {
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error("查询收藏数量失败：" + e.getMessage());
+        }
+    }
     /**
      * 多表关联分页查询
      * @param pageNum 页码

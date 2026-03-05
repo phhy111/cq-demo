@@ -100,6 +100,7 @@ public class ScenicsServiceImpl extends ServiceImpl<ScenicsMapper, Scenics> impl
         redisTemplate.expire(collectRedisKey, 26, TimeUnit.DAYS);
         
         log.info("更新景点 ID={} 的点赞数={}、收藏数={}", id, likeCount, collectCount);
+    }
     /**
      * 多表关联分页查询
      * @param pageNum 页码
