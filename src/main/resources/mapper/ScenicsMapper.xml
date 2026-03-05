@@ -1,33 +1,51 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="edu.cqie.cqdemo.mapper.ScenicsMapper">
+    <insert id="addScenics">
+        INSERT INTO `scenics` (
+            `region_id`, `name`, `subtitle`, `cover_img`,
+            `address`, `level`, `price`, `open_time`,
+            `description`
+        ) VALUES (
+                  #{regionId}, #{name}, #{subtitle}, #{coverImg},
+                  #{address}, #{level}, #{price}, #{openTime},
+                  #{description}
+                         )
+    </insert>
+    <delete id="deleteScenics">
+        DELETE FROM `scenics`
+        WHERE `id` IN
+        <foreach collection="list" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
     <select id="getSlideShowInfo" resultType="edu.cqie.cqdemo.entity.Scenics">
         SELECT `id`, `region_id`, `name`, `cover_img`,`subtitle`, `address`, `score`, `created_at`
         FROM `scenics`
         ORDER BY `created_at` DESC
-            LIMIT 5;
+            LIMIT 5
     </select>
     <select id="getScenicsInfoByRegionId" resultType="edu.cqie.cqdemo.entity.Scenics">
         SELECT *
         FROM `scenics`
         WHERE `region_id` = #{regionId}
-        ORDER BY `created_at` DESC;
+        ORDER BY `created_at` DESC
     </select>
     <select id="getScenicsInfoByLevel" resultType="edu.cqie.cqdemo.entity.Scenics">
         SELECT *
         FROM `scenics`
         WHERE `level` = #{level}
-        ORDER BY `created_at` DESC;
+        ORDER BY `created_at` DESC
     </select>
     <select id="getScenicsInfoByScore" resultType="edu.cqie.cqdemo.entity.Scenics">
         SELECT *
         FROM `scenics`
-        ORDER BY `score` DESC;
+        ORDER BY `score` DESC
     </select>
     <select id="getScenicsInfoByLikeCount" resultType="edu.cqie.cqdemo.entity.Scenics">
         SELECT *
         FROM `scenics`
-        ORDER BY `like_count` DESC;
+        ORDER BY `like_count` DESC
     </select>
     <select id="getScenicsDetailInfoById" resultType="edu.cqie.cqdemo.dto.ScenicsDTO">
         SELECT
@@ -40,12 +58,37 @@
         WHERE
             s.id = #{id}
         ORDER BY
-            si.id ASC;
+            si.id ASC
+    </select>
+    <select id="selectScenicsAndRegionPage" resultType="edu.cqie.cqdemo.dto.ScenicsAndRegionDTO">
+        SELECT
+            s.*,
+            r.name AS regionName
+        FROM
+            scenics s
+                LEFT JOIN
+            regions r
+            ON
+                s.region_id = r.id
     </select>
     <update id="addViewCount">
         UPDATE `scenics`
         SET `view_count` = `view_count` + 1
-        WHERE `id` = #{id};
+        WHERE `id` = #{id}
+    </update>
+    <update id="updateScenics">
+        UPDATE `scenics`
+        SET
+            `name` = #{name},
+            `subtitle` = #{subtitle},
+            `region_id` = #{regionId},
+            `address` = #{address},
+            `level` = #{level},
+            `price` = #{price},
+            `open_time` = #{openTime},
+            `description` = #{description},
+            `cover_img` = #{coverImg} -- 景点图片字段
+        WHERE `id` = #{id}; -- 这里替换为要编辑的景点ID
     </update>
     
     <!-- 更新景点的点赞数、收藏数和评论数 -->

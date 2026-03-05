@@ -20,4 +20,22 @@ public class ShopServiceImpI implements ShopService {
             return null;
         }
     }
+    /**
+     * 添加点赞数
+     * @param id
+     * @return
+     */
+    @Override
+    public int addlike(Integer id) {
+        return  shopMapper.addlike(id);
+    }
+    /**
+     * 删除点赞数
+     * @param id
+     * @return
+     */
+    @Override
+    public int deletelike(Integer id) {
+        return shopMapper.deletelike(id);
+    }
 }

@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface ShopService {
     List<Shop> selectShops(Integer id);
+    int addlike(Integer id);
+    int deletelike(Integer id);
 }
