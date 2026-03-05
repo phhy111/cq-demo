@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="edu.cqie.cqdemo.mapper.AnnouncementsMapper">
+
+    <resultMap id="BaseResultMap" type="edu.cqie.cqdemo.entity.Announcements">
+            <id property="id" column="id" />
+            <result property="title" column="title" />
+            <result property="content" column="content" />
+            <result property="type" column="type" />
+            <result property="coverImg" column="cover_img" />
+            <result property="isTop" column="is_top" />
+            <result property="status" column="status" />
+            <result property="viewCount" column="view_count" />
+            <result property="createdAt" column="created_at" />
+            <result property="updatedAt" column="updated_at" />
+            <result property="ext1" column="ext1" />
+            <result property="ext2" column="ext2" />
+            <result property="ext3" column="ext3" />
+            <result property="ext4" column="ext4" />
+            <result property="ext5" column="ext5" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,title,content,type,cover_img,is_top,
+        status,view_count,created_at,updated_at,ext1,
+        ext2,ext3,ext4,ext5
+    </sql>
+    <insert id="addAnnouncements">
+        INSERT INTO `announcements`
+            (`title`, `type`, `cover_img`, `is_top`, `content`, `status`)
+        VALUES
+            (
+                #{title}, #{type}, #{coverImg}, #{isTop}, #{content}, #{status}
+            );
+    </insert>
+    <update id="publish">
+        UPDATE `announcements`
+        SET
+            `status` = 1
+        WHERE `id` = #{id}
+    </update>
+    <update id="updateAnnouncements">
+        UPDATE `announcements`
+        SET
+            `title` = #{title},
+            `content` = #{content},
+            `type` = #{type},
+            `cover_img` = #{coverImg},
+            `is_top` = #{isTop},
+            `status` = #{status},
+            `updated_at` = NOW()
+        WHERE `id` = #{id}
+    </update>
+    <delete id="deleteAnnouncements">
+        DELETE
+        FROM `announcements`
+               WHERE `id` IN
+                   <foreach collection="list" item="id" open="(" separator="," close=")">
+                       #{id}
+                   </foreach>
+    </delete>
+    <select id="queryByStatus" resultType="edu.cqie.cqdemo.entity.Announcements">
+        SELECT *
+        FROM `announcements`
+        WHERE `status` = #{status}
+    </select>
+</mapper>
