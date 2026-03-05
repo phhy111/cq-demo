@@ -9,4 +9,6 @@ import reactor.core.publisher.Flux;
 public interface AiService {
 
     AiReport generateTravelPlan(@MemoryId Long memoryId, @UserMessage String userMessage);
+
+
 }
