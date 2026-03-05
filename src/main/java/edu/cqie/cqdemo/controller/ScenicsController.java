@@ -3,6 +3,7 @@ package edu.cqie.cqdemo.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import edu.cqie.cqdemo.annotation.RedisLog;
 import edu.cqie.cqdemo.common.Result;
+import edu.cqie.cqdemo.dto.ScenicsAndRegionDTO;
 import edu.cqie.cqdemo.dto.ScenicsDTO;
 import edu.cqie.cqdemo.entity.Collections;
 import edu.cqie.cqdemo.entity.Likes;
@@ -20,7 +21,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import edu.cqie.cqdemo.util.OSSOperationUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import org.springframework.web.multipart.MultipartFile;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -505,6 +510,87 @@ public class ScenicsController {
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error("查询收藏数量失败：" + e.getMessage());
+        }
+    }
+    /**
+     * 多表关联分页查询
+     * @param pageNum 页码
+     * @param pageSize 每页条数
+     * @return 分页结果
+     */
+    @GetMapping("/selectScenicsAndRegionPage")
+    public Result selectScenicsAndRegionPage(
+            @RequestParam(defaultValue = "1") Integer pageNum, // 默认第1页
+            @RequestParam(defaultValue = "5") Integer pageSize) // 默认每页5条
+    {
+        IPage<ScenicsAndRegionDTO> page = scenicsService.selectScenicsAndRegionPage(pageNum, pageSize);
+        if (page != null){
+            return Result.success(page);
+        }else {
+            return Result.error("多表关联分页查询失败");
+        }
+    }
+    /**
+     * 添加景点信息
+     * @return
+     */
+    @Autowired
+    private OSSOperationUtil ossOperationUtil;
+    @PostMapping("/AddScenicsInfo")
+    public Result addScenicsInfo(
+            MultipartFile file,
+            Scenics scenics) {
+        if (file != null) {
+            //获取生成的路径
+            String imageUrl = ossOperationUtil.uploadScenicsCoverImg(file);
+            scenics.setCoverImg(imageUrl);
+
+            boolean result = scenicsService.addScenicsInfo(scenics);
+            if (result) {
+                return Result.success("添加成功");
+            } else {
+                return Result.error("添加失败");
+            }
+        } else {
+            System.out.println("图片为空");
+            return Result.error("图片为空");
+        }
+    }
+    /**
+     * 批量删除景点信息
+     * @return
+     */
+    @PostMapping("/DeleteScenics")
+    public Result deleteScenics(@RequestParam("id") List<Integer>  id){
+        if (id != null){
+            boolean result = scenicsService.removeByIds(id);
+            if (result){
+                return Result.success("删除成功");
+            }else {
+                return Result.error("删除失败");
+            }
+        }else {
+            return Result.error("删除失败");
+        }
+    }
+    /**
+     * 修改景点信息
+     * @return
+     */
+    @PostMapping("/UpdateScenicsInfo")
+    public Result updateScenicsInfo(MultipartFile file, Scenics scenics){
+        if (scenics != null && file != null){
+            String imageUrl = ossOperationUtil.uploadScenicsCoverImg(file);
+            scenics.setCoverImg(imageUrl);
+
+            boolean result = scenicsService.updateScenicsInfo(scenics);
+            if (result){
+                return Result.success("修改成功");
+            }else {
+                return Result.error("修改失败");
+            }
+        }else {
+            return Result.error("文件或景点数据信息为空");
         }
     }
 }

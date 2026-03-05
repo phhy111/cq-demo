@@ -1,6 +1,8 @@
 package edu.cqie.cqdemo.service.impl;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import edu.cqie.cqdemo.dto.ScenicsAndRegionDTO;
 import edu.cqie.cqdemo.dto.ScenicsDTO;
 import edu.cqie.cqdemo.entity.Scenics;
 import edu.cqie.cqdemo.mapper.ScenicsMapper;
@@ -8,6 +10,7 @@ import edu.cqie.cqdemo.service.ScenicsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -97,5 +100,33 @@ public class ScenicsServiceImpl extends ServiceImpl<ScenicsMapper, Scenics> impl
         redisTemplate.expire(collectRedisKey, 26, TimeUnit.DAYS);
         
         log.info("更新景点 ID={} 的点赞数={}、收藏数={}", id, likeCount, collectCount);
+    }
+    /**
+     * 多表关联分页查询
+     * @param pageNum 页码
+     * @param pageSize 每页条数
+     * @return 分页结果
+     */
+    @Override
+    public IPage<ScenicsAndRegionDTO> selectScenicsAndRegionPage(Integer pageNum,Integer pageSize){
+        //1、创建分页对象
+        Page<ScenicsAndRegionDTO> page = new Page<>(pageNum,pageSize);
+        //2、执行分页查询
+        return scenicsMapper.selectScenicsAndRegionPage( page);
+    }
+
+    @Override
+    public boolean addScenicsInfo(Scenics scenics) {
+        return scenicsMapper.addScenics(scenics);
+    }
+
+    @Override
+    public boolean deleteScenicsInfo(List<Integer> id) {
+        return scenicsMapper.deleteScenics( id);
+    }
+
+    @Override
+    public boolean updateScenicsInfo(Scenics scenics) {
+        return scenicsMapper.updateScenics( scenics);
     }
 }

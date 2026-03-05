@@ -4,10 +4,12 @@ import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
+import edu.cqie.cqdemo.entity.AiReport;
 import edu.cqie.cqdemo.service.AiService;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import reactor.core.publisher.Flux;
 
 @Configuration
 public class AiServiceFactory {
@@ -27,4 +29,6 @@ public class AiServiceFactory {
                 .chatMemoryProvider(memoryId -> MessageWindowChatMemory.withMaxMessages(10))
                 .build();
     }
+
+
 }
