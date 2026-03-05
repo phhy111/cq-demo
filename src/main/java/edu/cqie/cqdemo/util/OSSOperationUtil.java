@@ -127,6 +127,13 @@ public class OSSOperationUtil {
         return upload(file, "scenics_cover_img/");
     }
 
+    /**
+     * 上传公告图片到阿里云 OSS
+     * @param file
+     */
+    public String uploadNoticeImg(MultipartFile file) {
+        return upload(file, "announcement_img/");
+    }
 
     /**
      * 辅助方法：判断文件是否为图片
