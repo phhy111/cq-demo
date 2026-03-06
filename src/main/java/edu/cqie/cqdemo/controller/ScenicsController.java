@@ -129,6 +129,19 @@ public class ScenicsController {
         }
     }
     /**
+     * 获取推荐景点信息
+     * @return
+     */
+    @GetMapping("/GetRecommendedScenics")
+    public Result<List<Scenics>> getRecommendedScenics() {
+        List<Scenics> scenicsList = scenicsService.getRecommendedScenics();
+        if (scenicsList != null){
+            return Result.success(scenicsList);
+        }else {
+            return Result.error("未查询到推荐景点信息");
+        }
+    }
+    /**
      * 添加景点浏览量
      * @return
      */

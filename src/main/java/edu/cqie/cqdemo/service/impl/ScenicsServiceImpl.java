@@ -61,6 +61,11 @@ public class ScenicsServiceImpl extends ServiceImpl<ScenicsMapper, Scenics> impl
     }
 
     @Override
+    public List<Scenics> getRecommendedScenics() {
+        return scenicsMapper.getRecommendedScenics();
+    }
+
+    @Override
     public boolean addViewCount(Integer id) {
         return scenicsMapper.addViewCount(id);
     }

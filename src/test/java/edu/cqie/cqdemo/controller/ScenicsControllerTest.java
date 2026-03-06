@@ -62,4 +62,9 @@ class ScenicsControllerTest {
     void deleteScenics() {
         scenicsController.deleteScenics(List.of(17));
     }
+
+    @Test
+    void getRecommendedScenics() {
+        scenicsController.getRecommendedScenics();
+    }
 }

@@ -47,6 +47,11 @@ public interface ScenicsMapper extends BaseMapper<Scenics> {
      */
     public List<Scenics> getScenicsInfoByLikeCount();
     /**
+     * 获取推荐景点信息
+     * @return
+     */
+    public List<Scenics> getRecommendedScenics();
+    /**
      * 增加浏览量
      * @return
      */

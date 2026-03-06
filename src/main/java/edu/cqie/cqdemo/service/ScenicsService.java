@@ -39,6 +39,11 @@ public interface ScenicsService extends IService<Scenics> {
      */
     public List<Scenics> getScenicsInfoByLikeCount();
     /**
+     * 获取推荐景点信息
+     * @return
+     */
+    public List<Scenics> getRecommendedScenics();
+    /**
      * 添加景点浏览量
      * @param id
      */
