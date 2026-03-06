@@ -1,6 +1,7 @@
 package edu.cqie.cqdemo.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -58,7 +59,7 @@ public class FoodCategories {
     /**
      * 预留字段5
      */
-    private String ext5;
+    @TableField(exist = false)
     private Categories categories;
 
 }

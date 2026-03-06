@@ -24,6 +24,14 @@
                food_categories.image,
                categories.name as category_name FROM food_categories join categories on food_categories.category_id=categories.id where food_categories.status=1
     </select>
+    <select id="selectallFoods" resultMap="FoodWithCategoryMap">
+        SELECT food_categories.id,
+               food_categories.created_at,
+               food_categories.name as food_name,
+               food_categories.details,
+               food_categories.image,
+               categories.name as category_name FROM food_categories join categories on food_categories.category_id=categories.id
+    </select>
 
 
     <!-- 更新美食的点赞数、收藏数和评论数 -->

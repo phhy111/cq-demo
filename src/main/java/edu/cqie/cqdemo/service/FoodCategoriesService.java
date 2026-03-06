@@ -21,5 +21,6 @@ public interface FoodCategoriesService extends IService<FoodCategories> {
     int addfoodselcet( Integer targetid);
     int deletefoodselcet(Integer targetid);
     int selectfoodselcet(Integer targetid);
+    List<FoodCategories>selectallFoods();
 
 }

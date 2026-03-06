@@ -71,6 +71,11 @@ public class FoodCategoriesServiceImpl extends ServiceImpl<FoodCategoriesMapper,
        return result;
     }
 
+    @Override
+    public List<FoodCategories> selectallFoods() {
+       return foodCategoriesMapper.selectallFoods();
+    }
+
     private Long getCurrentUserId() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal instanceof LoginUser) {
