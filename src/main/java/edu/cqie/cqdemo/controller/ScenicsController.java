@@ -3,6 +3,7 @@ package edu.cqie.cqdemo.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import edu.cqie.cqdemo.annotation.RedisLog;
 import edu.cqie.cqdemo.common.Result;
+import edu.cqie.cqdemo.dto.RegionScenicsCountDTO;
 import edu.cqie.cqdemo.dto.ScenicsAndRegionDTO;
 import edu.cqie.cqdemo.dto.ScenicsDTO;
 import edu.cqie.cqdemo.entity.Collections;
@@ -604,6 +605,20 @@ public class ScenicsController {
             }
         }else {
             return Result.error("文件或景点数据信息为空");
+        }
+    }
+
+    /**
+     * 查询每个区域景点数量
+     * @return
+     */
+    @GetMapping("/GetRegionScenicsCount")
+    public Result<List<RegionScenicsCountDTO>> getRegionScenicsCount() {
+        List<RegionScenicsCountDTO> list = scenicsService.getRegionScenicsCount();
+        if (list != null) {
+            return Result.success(list);
+        } else {
+            return Result.error("未查询到区域景点数量信息");
         }
     }
 }

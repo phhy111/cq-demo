@@ -2,6 +2,7 @@ package edu.cqie.cqdemo.service.impl;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import edu.cqie.cqdemo.dto.RegionScenicsCountDTO;
 import edu.cqie.cqdemo.dto.ScenicsAndRegionDTO;
 import edu.cqie.cqdemo.dto.ScenicsDTO;
 import edu.cqie.cqdemo.entity.Scenics;
@@ -133,5 +134,10 @@ public class ScenicsServiceImpl extends ServiceImpl<ScenicsMapper, Scenics> impl
     @Override
     public boolean updateScenicsInfo(Scenics scenics) {
         return scenicsMapper.updateScenics( scenics);
+    }
+
+    @Override
+    public List<RegionScenicsCountDTO> getRegionScenicsCount() {
+        return scenicsMapper.getRegionScenicsCount();
     }
 }

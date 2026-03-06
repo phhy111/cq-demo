@@ -67,4 +67,9 @@ class ScenicsControllerTest {
     void getRecommendedScenics() {
         scenicsController.getRecommendedScenics();
     }
+
+    @Test
+    void getRegionScenicsCount() {
+        scenicsController.getRegionScenicsCount();
+    }
 }

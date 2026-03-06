@@ -123,4 +123,19 @@
             )
         WHERE s.id = #{id}
     </update>
+
+    <select id="getRegionScenicsCount" resultType="edu.cqie.cqdemo.dto.RegionScenicsCountDTO">
+        SELECT
+            s.region_id,
+            r.name,
+            COUNT(s.id) AS scnics_count
+        FROM
+            scenics s
+                LEFT JOIN
+            regions r ON s.region_id = r.id
+        GROUP BY
+            s.region_id, r.name
+        ORDER BY
+            scnics_count DESC
+    </select>
 </mapper>

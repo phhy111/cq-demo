@@ -44,9 +44,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper,Users>implements Use
             return false;
         }else {
             Integer currentStatus = users.getUserStatus();
-            if (currentStatus == 1){
+            if (Integer.valueOf(1).equals(currentStatus)){
                 users.setUserStatus(0);
-            }else if (currentStatus == 0){
+            }else if (Integer.valueOf(0).equals(currentStatus)){
                 users.setUserStatus(1);
             }else{
                 return false;
