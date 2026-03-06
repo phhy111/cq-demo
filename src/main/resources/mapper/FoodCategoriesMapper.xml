@@ -24,6 +24,14 @@
                food_categories.image,
                categories.name as category_name FROM food_categories join categories on food_categories.category_id=categories.id where food_categories.status=1
     </select>
+    <select id="selectallFoods" resultMap="FoodWithCategoryMap">
+        SELECT food_categories.id,
+               food_categories.created_at,
+               food_categories.name as food_name,
+               food_categories.details,
+               food_categories.image,
+               categories.name as category_name FROM food_categories join categories on food_categories.category_id=categories.id
+    </select>
 
 
     <!-- 更新美食的点赞数、收藏数和评论数 -->
@@ -60,9 +68,16 @@
                food_categories.image,
                categories.name as category_name FROM food_categories join categories on food_categories.category_id=categories.id where food_categories.status=1 and food_categories.id=#{id}
     </select>
-
+<!--    添加收藏-->
     <insert id="addfoodselcet">
-        insert into collection(user_id,target_id,target_type,created_at) values(#{userid},#{targetid},2,#{createat})
+        insert into collections(user_id,target_id,target_type,created_at) values(#{userid},#{targetid},2,#{createat})
     </insert>
-
+<!--    取消收藏-->
+    <delete id="deletefoodselcet">
+        delete from collections where user_id=#{userid} and target_id=#{targetid} and target_type=2
+    </delete>
+<!--    查看用户是否已收藏-->
+    <select id="selectfoodselcet" resultType="java.lang.Integer">
+        select count(*) from collections where user_id=#{userid} and target_id=#{targetid} and target_type=2
+    </select>
 </mapper>

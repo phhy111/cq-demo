@@ -1,9 +1,11 @@
 package edu.cqie.cqdemo.controller;
 
 import edu.cqie.cqdemo.common.Result;
+import edu.cqie.cqdemo.entity.LoginUser;
 import edu.cqie.cqdemo.entity.Shop;
 import edu.cqie.cqdemo.service.ShopService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,4 +39,16 @@ public class ShopController {
             return Result.error("删除失败");
         }
     }
+    //查询店铺详情
+    @GetMapping("/selectshopdetails/{id}")
+    public Result<Shop> selectshopdetails(@PathVariable Integer id) {
+        return Result.success(shopService.selectshopdetails(id));
+    }
+    //查询用户是否已经点赞
+    @PostMapping("/selecthistory/{id}")
+    public Result<Integer> selecthistory(@PathVariable Integer targetid) {
+        return Result.success(shopService.selecthistory(targetid));
+    }
 }
+
+

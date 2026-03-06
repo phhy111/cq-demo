@@ -21,7 +21,11 @@ public interface FoodCategoriesMapper extends BaseMapper<FoodCategories> {
     FoodCategories selectone( Integer id);
 
     void updateLikeCountAndCollectCount();
-
-
-    int addfoodselcet(@Param("userid") Integer userid , @Param("targetid") Integer targetid, @Param("createat") Date date);
+//    添加美食收藏
+    int addfoodselcet(@Param("userid") long userid , @Param("targetid") Integer targetid, @Param("createat") Date date);
+    //取消美食收藏
+    int deletefoodselcet(@Param("userid") long userid , @Param("targetid") Integer targetid);
+    //查询是否已收藏
+    int selectfoodselcet(@Param("userid") long userid , @Param("targetid") Integer targetid);
+    List<FoodCategories>selectallFoods();
 }

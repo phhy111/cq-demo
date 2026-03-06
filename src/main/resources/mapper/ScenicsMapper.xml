@@ -47,6 +47,13 @@
         FROM `scenics`
         ORDER BY `like_count` DESC
     </select>
+    <select id="getRecommendedScenics" resultType="edu.cqie.cqdemo.entity.Scenics">
+        SELECT `id`, `name`, `cover_img`, `score`, `address`, `collect_count`, `comment_count`, `like_count`
+        FROM `scenics`
+        WHERE `status` = 1
+        ORDER BY (`collect_count` * 0.3 + `comment_count` * 0.2 + `like_count` * 0.5) DESC
+        LIMIT 6
+    </select>
     <select id="getScenicsDetailInfoById" resultType="edu.cqie.cqdemo.dto.ScenicsDTO">
         SELECT
             s.*,

@@ -8,8 +8,8 @@
         <result property="name" column="name"/>
         <result property="subtitle" column="subtitle"/>
         <result property="cover_img" column="cover_img"/>
-       <result property="adress" column="adress"/>
-        <result property="discription" column="discription"/>
+       <result property="address" column="address"/>
+        <result property="description" column="description"/>
         <result property="avg_price" column="avg_price"/>
        <result property="open_time" column="open_time"/>
         <result property="contact_phone" column="contact_phone"/>
@@ -53,4 +53,37 @@
     <update id="deletelike">
             update foods set like_count=like_count-1 where id= #{id}
     </update>
+<!--    查询店铺详情信息-->
+    <select id="selectshopdetails" resultMap="shopditails">
+        select foods.id,
+               foods.name,
+               foods.subtitle,
+               foods.cover_img,
+               foods.address,
+               foods.description,
+               foods.avg_price,
+               foods.open_time,
+               foods.contact_phone,
+               foods.score,
+               foods.collect_count,
+               foods.view_count,
+               foods.like_count,
+               foods.is_recommend,
+               foods.is_hot,
+               foods.status,
+               foods.created_at,
+               foods.updated_at from foods where foods.id=#{id}
+    </select>
+    <!--    添加点赞记录-->
+    <insert id="addshoplike">
+        insert into likes(user_id,target_id,target_type,created_at) values(#{userid},#{targetid},2,#{createat})
+    </insert>
+    <!--    删除点赞记录-->
+    <delete id="deleteshoplike">
+        delete from likes where user_id= #{userid} and target_id= #{targetid} and target_type=2
+    </delete>
+    <!--    查询点赞记录-->
+    <select id="selectshoplike" resultType="java.lang.Integer">
+        select count(*) from likes where user_id= #{userid} and target_id= #{targetid} and target_type=2
+    </select>
 </mapper>
