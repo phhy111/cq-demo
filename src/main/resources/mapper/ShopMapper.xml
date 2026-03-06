@@ -74,4 +74,16 @@
                foods.created_at,
                foods.updated_at from foods where foods.id=#{id}
     </select>
+    <!--    添加点赞记录-->
+    <insert id="addshoplike">
+        insert into likes(user_id,target_id,target_type,created_at) values(#{userid},#{targetid},2,#{createat})
+    </insert>
+    <!--    删除点赞记录-->
+    <delete id="deleteshoplike">
+        delete from likes where user_id= #{userid} and target_id= #{targetid} and target_type=2
+    </delete>
+    <!--    查询点赞记录-->
+    <select id="selectshoplike" resultType="java.lang.Integer">
+        select count(*) from likes where user_id= #{userid} and target_id= #{targetid} and target_type=2
+    </select>
 </mapper>

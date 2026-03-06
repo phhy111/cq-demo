@@ -6,6 +6,7 @@ import edu.cqie.cqdemo.mapper.FoodCategoriesMapper;
 import edu.cqie.cqdemo.service.AiService;
 import edu.cqie.cqdemo.service.FoodCategoriesService;
 import edu.cqie.cqdemo.service.ShopService;
+import edu.cqie.cqdemo.service.impl.ShopServiceImpI;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class CqDemoApplicationTests {
 
     @Autowired
-    private AiService aiService;
+    private ShopServiceImpI shopService;
     @Autowired
     private FoodCategoriesService foodCategoriesService;
 
@@ -24,5 +25,5 @@ public class CqDemoApplicationTests {
     @Test
 
     void contextLoads() {
-        foodCategoriesService.addfoodselcet(1);
+
 }}
