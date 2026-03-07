@@ -20,7 +20,7 @@ public class FoodCategoriesServiceImpl extends ServiceImpl<FoodCategoriesMapper,
     private FoodCategoriesMapper foodCategoriesMapper;
     @Override
     public List<FoodCategories> getAllStatus() {
-        return list();
+        return foodCategoriesMapper.getAllStatus();
     }
 
     @Override

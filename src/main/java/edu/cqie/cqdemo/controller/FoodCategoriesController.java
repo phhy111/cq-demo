@@ -130,8 +130,7 @@ public class FoodCategoriesController {
     }
     @GetMapping("/getAllStatusFoods")
     public Result<List<FoodCategories>> getAllStatusFoods(){
-        System.out.println("获取所有状态的美食数据");
-        List<FoodCategories> foods = foodscategoriesService.getAllStatus();
+        List<FoodCategories> foods = foodscategoriesService.selectallFoods();
         return Result.success(foods);
     }
 }
