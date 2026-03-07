@@ -77,7 +77,7 @@ public class ShopServiceImpI implements ShopService {
     }
 
     @Override
-    public Shop selectallshop() {
+    public List<Shop> selectallshop() {
         return shopMapper.selectallshop();
     }
 

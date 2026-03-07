@@ -49,8 +49,8 @@ public class ShopController {
     public Result<Integer> selecthistory(@PathVariable Integer targetid) {
         return Result.success(shopService.selecthistory(targetid));
     }
-    @PostMapping("/selectallshop")
-    public Result<Shop> selectallshop() {
+    @GetMapping("/selectallshop")
+    public Result<List<Shop>> selectallshop() {
         return Result.success(shopService.selectallshop());
     }
 }
