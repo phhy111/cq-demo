@@ -2,19 +2,35 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="edu.cqie.cqdemo.mapper.FoodCategoriesMapper">
 <!--美食-->
-    <select id="getAllStatus" resultType="edu.cqie.cqdemo.entity.FoodCategories">
-        SELECT * FROM food_categories ORDER BY created_at DESC;
+    <select id="getAllStatus" resultMap="FoodWithCategoryMap">
+        SELECT food_categories.id,
+               food_categories.food_id,
+               food_categories.category_id,
+               food_categories.created_at,
+               food_categories.name as food_name,
+               food_categories.details,
+               food_categories.image,
+               food_categories.status,
+               categories.name as category_name
+        FROM food_categories
+                 LEFT JOIN categories on food_categories.category_id=categories.id
+        ORDER BY food_categories.created_at DESC
     </select>
     <resultMap id="FoodWithCategoryMap" type="edu.cqie.cqdemo.entity.FoodCategories">
-        <result property="id" column="id"/>
+        <id property="id" column="id"/>
+        <result property="foodId" column="food_id"/>
+        <result property="categoryId" column="category_id"/>
         <result property="createdAt" column="created_at"/>
         <result property="name" column="food_name"/>
         <result property="details" column="details"/>
         <result property="image" column="image"/>
+        <result property="status" column="status"/>
         <association property="categories" javaType="edu.cqie.cqdemo.entity.Categories">
+            <id property="id" column="category_id"/>
             <result property="name" column="category_name"/>
         </association>
     </resultMap>
+
 <!--    查询所有美食-->
     <select id="selectFoods" resultMap="FoodWithCategoryMap">
         SELECT food_categories.id,
@@ -30,6 +46,7 @@
                food_categories.name as food_name,
                food_categories.details,
                food_categories.image,
+               food_categories.status,
                categories.name as category_name FROM food_categories join categories on food_categories.category_id=categories.id
     </select>
 
