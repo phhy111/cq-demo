@@ -97,4 +97,8 @@
     <select id="selectfoodselcet" resultType="java.lang.Integer">
         select count(*) from collections where user_id=#{userid} and target_id=#{targetid} and target_type=2
     </select>
+<!--    新增美食-->
+    <insert id="save">
+        insert into food_categories(food_id,category_id,name,details,image,status,created_at) values(#{food_id},#{category_id},#{name},#{details},#{image},#{status},#{createdAt})
+    </insert>
 </mapper>

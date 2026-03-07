@@ -133,4 +133,26 @@ public class FoodCategoriesController {
         List<FoodCategories> foods = foodscategoriesService.selectallFoods();
         return Result.success(foods);
     }
+    @PostMapping("/save")
+    public Result save(@RequestBody FoodCategories foodCategories){
+        try {
+            // 设置默认值
+            if (foodCategories.getStatus() == null) {
+                foodCategories.setStatus(2); // 待审核
+            }
+            if (foodCategories.getCreatedAt() == null) {
+                foodCategories.setCreatedAt(new Date());
+            }
+
+            int result = foodscategoriesService.saveFood(foodCategories);
+            if (result > 0) {
+                return Result.success("保存成功");
+            } else {
+                return Result.error("保存失败");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("保存失败：" + e.getMessage());
+        }
+    }
 }
