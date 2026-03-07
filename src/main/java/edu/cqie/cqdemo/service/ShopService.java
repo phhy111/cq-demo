@@ -15,4 +15,5 @@ public interface ShopService {
     int addlikehistory(long userid, Integer targetid);
     int deletehistory(long userid, Integer targetid);
     int selecthistory(Integer targetid);
+    Shop selectallshop();
 }

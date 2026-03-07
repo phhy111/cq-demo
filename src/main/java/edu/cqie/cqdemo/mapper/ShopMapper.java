@@ -17,4 +17,5 @@ public interface ShopMapper {
     int deleteshoplike(@Param("userid") long userid , @Param("targetid") Integer targetid);
     int selectshoplike(@Param("userid") long userid,@Param("targetid") Integer targetid);
     int addshoplike(@Param("userid") long userid,@Param("targetid") Integer targetid, @Param("createat") Date date);
+    Shop selectallshop();
 }

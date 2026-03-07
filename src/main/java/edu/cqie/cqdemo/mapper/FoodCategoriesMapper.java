@@ -28,4 +28,5 @@ public interface FoodCategoriesMapper extends BaseMapper<FoodCategories> {
     //查询是否已收藏
     int selectfoodselcet(@Param("userid") long userid , @Param("targetid") Integer targetid);
     List<FoodCategories>selectallFoods();
+    int save(FoodCategories foodCategories);
 }
