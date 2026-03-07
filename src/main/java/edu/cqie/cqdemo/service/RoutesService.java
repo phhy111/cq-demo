@@ -32,4 +32,5 @@ public interface RoutesService extends IService<Routes> {
     List<Routes> getAllRoutesWithAllStatus();
 
     boolean deleteById(Integer id);
+    List<Integer> selectPendingReviewCount();
 }

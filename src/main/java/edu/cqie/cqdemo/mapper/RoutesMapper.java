@@ -33,6 +33,8 @@ public interface RoutesMapper extends BaseMapper<Routes> {
 
     //查询所有状态的路线数据
     List<Routes> getAllRoutesWithAllStatus();
+
+    List<Integer> selectPendingReviewCount();
 }
 
 

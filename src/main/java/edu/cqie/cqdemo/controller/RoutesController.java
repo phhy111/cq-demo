@@ -865,4 +865,12 @@ public class RoutesController {
             log.warn("清理 Redis 作品列表中的路线失败：{}", e.getMessage());
         }
     }
+    /**
+     * 查询路线待审核数量
+     * @return
+     */
+    @GetMapping("/getRouteWaitAuditCount")
+    public List<Integer> getRouteWaitAuditCount() {
+        return routesService.selectPendingReviewCount();
+    }
 }

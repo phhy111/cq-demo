@@ -13,4 +13,9 @@ class RoutesControllerTest {
     void getRoutesInfo() {
         routesController.getRoutesListInfo();
     }
+
+    @Test
+    void getRouteWaitAuditCount() {
+        routesController.getRouteWaitAuditCount();
+    }
 }
