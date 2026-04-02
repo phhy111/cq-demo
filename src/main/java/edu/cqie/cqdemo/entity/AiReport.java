@@ -6,27 +6,11 @@ import lombok.Data;
 
 @Data
 public class AiReport {
-    @JsonProperty("name")
-    private String name; // 路线名字
-
-    @JsonProperty("routesInfo")
-    private String routesInfo;//具体路线
-
-    @JsonProperty("money")
-    private Double money;//预算
-
-    @JsonProperty("description")
+    private String routesTitle;//路线名字
     private String description;//路线描述
-
-    @JsonProperty("strategyTitle")
-    private String strategyTitle; // 攻略标题
-
-    @JsonProperty("routeIntro")
-    private String routeIntro; // 攻略摘要
-
-    @JsonProperty("highlights")
-    private String highlights; // 亮点
-
-    @JsonProperty("content")
-    private String content; // 具体内容（Markdown 字符串）
+    private String traveType;//旅行类型
+    private String bestSeason;//最佳季节
+    private String guidesTitle;//攻略标题
+    private String summary;//摘要
+    private String budgetInfo;//预算
 }

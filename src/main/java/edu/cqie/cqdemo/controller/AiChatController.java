@@ -16,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -64,7 +63,7 @@ public class AiChatController {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.TEXT_EVENT_STREAM_VALUE
     )
-    public Flux<ServerSentEvent<String>> getHistoryByMessage(@RequestBody Map<String, String> request) {
+    public Flux<String> getHistoryByMessage(@RequestBody Map<String, String> request) {
         try {
             LoginUser loginUser = this.getLoginUser();
             Long userId = loginUser.getId();
@@ -72,10 +71,10 @@ public class AiChatController {
             String message = request.get("message");
 
             if (message == null) {
-                return buildErrorSseResponse(400, "message参数不能为空");
+                return Flux.error(new IllegalArgumentException("message参数不能为空"));
             }
             if (travelWay == null) {
-                return buildErrorSseResponse(400, "travelWay参数不能为空");
+                return Flux.error(new IllegalArgumentException("travelWay参数不能为空"));
             }
 
             // 构建Redis键的模式，用于匹配该用户的所有对话
@@ -99,29 +98,23 @@ public class AiChatController {
             }
 
             if (targetConversation == null) {
-                return buildErrorSseResponse(404, "未找到对应的历史对话");
+                return Flux.error(new RuntimeException("未找到对应的历史对话"));
             }
 
             String aiMessage = (String) targetConversation.get("aiMessage");
             if (aiMessage == null) {
-                return buildErrorSseResponse(500, "历史对话数据不完整");
+                return Flux.error(new RuntimeException("历史对话数据不完整"));
             }
 
-            // 构建SSE响应
-            Map<String, Object> doneData = new HashMap<>();
-            doneData.put("code", 200);
-            doneData.put("msg", "历史对话加载成功");
-            doneData.put("data", aiMessage);
-
-            ServerSentEvent<String> sseEvent = serializeToSse("ai-done", doneData);
-            return Flux.just(sseEvent);
+            // 直接返回markdown内容
+            return Flux.just(aiMessage);
 
         } catch (IllegalAccessException e) {
             log.error("认证失败", e);
-            return buildErrorSseResponse(401, e.getMessage());
+            return Flux.error(e);
         } catch (Exception e) {
             log.error("获取历史对话失败", e);
-            return buildErrorSseResponse(500, "系统内部错误：" + e.getMessage());
+            return Flux.error(e);
         }
     }
 
@@ -185,63 +178,51 @@ public class AiChatController {
             LoginUser loginUser = this.getLoginUser();
             Long userId = loginUser.getId();
 
-            // 从请求体中获取AiDTO和AiReport
+            // 从请求体中获取AiDTO和markdown内容
             Map<String, Object> aiDTOMap = (Map<String, Object>) request.get("aiDTO");
-            Map<String, Object> aiReportMap = (Map<String, Object>) request.get("aiReport");
+            String markdownContent = (String) request.get("markdownContent");
 
             // 打印日志，查看前端发送的实际数据
             log.info("前端发送的aiDTOMap: {}", aiDTOMap);
-            log.info("前端发送的aiReportMap: {}", aiReportMap);
+            log.info("前端发送的markdownContent长度: {}", markdownContent != null ? markdownContent.length() : 0);
             log.info("aiDTOMap中的travelWay: {}", aiDTOMap != null ? aiDTOMap.get("travelWay") : "null");
-            log.info("aiReportMap中的travelWay: {}", aiReportMap != null ? aiReportMap.get("travelWay") : "null");
 
-            if (aiDTOMap == null || aiReportMap == null) {
+            if (aiDTOMap == null || markdownContent == null || markdownContent.isEmpty()) {
                 return Result.error("请求参数不能为空");
             }
 
             // 创建Routes对象
             Routes routes = new Routes();
             routes.setUserId(userId);
-            routes.setTitle((String) aiReportMap.get("name"));
-            routes.setDescription((String) aiReportMap.get("highlights"));
-            routes.setSubtitle((String) aiReportMap.get("routesInfo"));
+            routes.setTitle((String) aiDTOMap.get("title"));
+            routes.setDescription((String) aiDTOMap.get("description"));
+            routes.setSubtitle((String) aiDTOMap.get("subtitle"));
             // 保存到数据库
             routesService.save(routes);
             // 创建Guides对象
             Guides guides = new Guides();
             guides.setUserId(userId);
-            guides.setTitle((String) aiReportMap.get("strategyTitle"));
-            guides.setSummary((String) aiReportMap.get("routeIntro"));
-            guides.setContent((String) aiReportMap.get("content"));
+            guides.setTitle((String) aiDTOMap.get("title"));
+            guides.setSummary((String) aiDTOMap.get("summary"));
+            guides.setContent(markdownContent); // 保存完整的markdown内容
             guides.setCategory((String) aiDTOMap.get("travelType"));
             // 处理budgetInfo的类型转换，确保无论输入是Integer还是Double都能正确转换
-            Object moneyObj = aiReportMap.get("money");
+            Object moneyObj = aiDTOMap.get("budget");
             if (moneyObj != null) {
                 if (moneyObj instanceof Integer) {
                     guides.setBudgetInfo(((Integer) moneyObj).doubleValue());
                 } else if (moneyObj instanceof Double) {
                     guides.setBudgetInfo((Double) moneyObj);
+                } else if (moneyObj instanceof String) {
+                    try {
+                        guides.setBudgetInfo(Double.parseDouble((String) moneyObj));
+                    } catch (NumberFormatException e) {
+                        log.warn("预算格式错误: {}", moneyObj);
+                    }
                 }
             }
-            // 同时检查aiDTOMap和aiReportMap中的travelWay字段，确保能够获取到正确的值
-            String travelWay = null;
-            if (aiDTOMap != null && aiDTOMap.get("travelWay") != null) {
-                travelWay = (String) aiDTOMap.get("travelWay");
-            } else if (aiReportMap != null && aiReportMap.get("travelWay") != null) {
-                travelWay = (String) aiReportMap.get("travelWay");
-            } else if (aiReportMap != null && aiReportMap.get("routeIntro") != null) {
-                // 从routeIntro中提取travelWay信息
-                String routeIntro = (String) aiReportMap.get("routeIntro");
-                if (routeIntro.contains("公共交通")) {
-                    travelWay = "公共交通";
-                } else if (routeIntro.contains("自驾")) {
-                    travelWay = "自驾";
-                } else if (routeIntro.contains("打车")) {
-                    travelWay = "打车";
-                } else if (routeIntro.contains("步行")) {
-                    travelWay = "步行";
-                }
-            }
+            // 获取travelWay
+            String travelWay = (String) aiDTOMap.get("travelWay");
             guides.setTravelWay(travelWay);
             log.info("最终设置的travelWay: {}", travelWay);
             guides.setRoutesId(routes.getId());
@@ -386,112 +367,112 @@ public class AiChatController {
     @PostMapping(
             value = "/chat",
             consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.TEXT_EVENT_STREAM_VALUE
+            produces = MediaType.TEXT_EVENT_STREAM_VALUE  // ← 改为 SSE 流式输出
     )
-    public Flux<ServerSentEvent<String>> chat(@RequestBody(required = true) AiDTO aiDTO) {
+    public Flux<String> chat(@RequestBody(required = true) AiDTO aiDTO) {
+        // ========== 阶段一：同步校验（阻塞式，必须在流之前完成） ==========
+        if (aiDTO == null) {
+            return Flux.just("data:" + toJson(Result.error("请求参数不能为空")) + "\n\n");
+        }
+
+        LoginUser loginUser;
         try {
-            if (aiDTO == null) {
-                return buildErrorSseResponse(400, "请求参数不能为空");
-            }
-
-            LoginUser loginUser = this.getLoginUser();
-            Long userId = loginUser.getId();
-            String redisKey = AI_SESSION_KEY_PREFIX + userId;
-
-            String userMessage;
-            AiDTO historyAiDTO = (AiDTO) redisTemplate.opsForValue().get(redisKey);
-
-            if (historyAiDTO == null) {
-                // 首次请求：校验必填项
-                if (aiDTO.getPeopleNum() == null || aiDTO.getPeopleNum().isBlank()) {
-                    return buildErrorSseResponse(400, "出行人数不能为空");
-                }
-                if (aiDTO.getPlanDays() == null || aiDTO.getPlanDays().isBlank()) {
-                    return buildErrorSseResponse(400, "旅游天数不能为空");
-                }
-                if (aiDTO.getTravelType() == null || aiDTO.getTravelType().isBlank()) {
-                    return buildErrorSseResponse(400, "出行类型不能为空");
-                }
-                userMessage = aiDTO.userMessages()+"content的具体内容Markdown格式的字符串（必须不少于1000字），如果时间足够景点可以挑选一些其他符合的，不用局限于所给的几个想去景点，但是注意顺路";
-                redisTemplate.opsForValue().set(redisKey, aiDTO, AI_SESSION_EXPIRE, AI_SESSION_TIME_UNIT);
-            } else {
-                // 后续请求：优化
-                if (aiDTO.getMessage() == null || aiDTO.getMessage().isBlank()) {
-                    return buildErrorSseResponse(400, "请输入你的旅行优化/新增要求");
-                }
-                userMessage = aiDTO.userMessages(historyAiDTO, aiDTO.getMessage())+"content的具体内容Markdown格式的字符串（必须不少于1000字），如果时间足够景点可以挑选一些其他符合的，不用局限于所给的几个想去景点，但是注意顺路";
-                redisTemplate.expire(redisKey, AI_SESSION_EXPIRE, AI_SESSION_TIME_UNIT);
-            }
-
-            log.info("AI消息拼接完成：{}", userMessage);
-
-            return Flux.defer(() -> {
-                        try {
-                            // 调用AI服务生成旅行计划
-                            AiReport report = aiService.generateTravelPlan(userId, userMessage);
-
-                            // 将AI生成的报告转换为JSON字符串
-                            String fullJson = OBJECT_MAPPER.writeValueAsString(report);
-                            log.debug("结构化AI响应生成成功，JSON长度：{}", fullJson.length());
-
-                            // 存储对话数据到Redis，有效期24小时
-                            String conversationKey = AI_CONVERSATION_KEY_PREFIX + userId + ":" + System.currentTimeMillis();
-                            Map<String, Object> conversationData = new HashMap<>();
-                            conversationData.put("memoryId", userId);
-                            conversationData.put("userMessage", userMessage);
-                            conversationData.put("aiMessage", fullJson);
-                            conversationData.put("travelWay", aiDTO.getTravelWay());
-                            conversationData.put("travelType",aiDTO.getTravelType());
-                            conversationData.put("timestamp", System.currentTimeMillis());
-                            redisTemplate.opsForValue().set(conversationKey, conversationData, AI_CONVERSATION_EXPIRE, AI_CONVERSATION_TIME_UNIT);
-                            log.info("对话数据已存储到Redis，键：{}", conversationKey);
-
-                            // 读取Redis中的对话数据（验证存储成功）
-                            Map<String, Object> storedConversation = (Map<String, Object>) redisTemplate.opsForValue().get(conversationKey);
-                            if (storedConversation != null) {
-                                log.info("成功从Redis读取对话数据，memoryId：{}", storedConversation.get("memoryId"));
-                            }
-
-                            Map<String, Object> doneData = new HashMap<>();
-                            doneData.put("code", 200);
-                            doneData.put("msg", historyAiDTO == null ? "旅行计划生成成功" : "旅行计划优化成功");
-                            doneData.put("data", fullJson);
-
-                            // 构建符合格式的SSE事件并返回正确的Publisher类型
-                            ServerSentEvent<String> sseEvent = serializeToSse("ai-done", doneData);
-                            return Mono.just(sseEvent);
-                        } catch (dev.langchain4j.service.output.OutputParsingException e) {
-                            log.error("AI生成的JSON格式错误，解析失败", e);
-                            // 构建错误响应
-                            Map<String, Object> errorData = new HashMap<>();
-                            errorData.put("code", 400);
-                            errorData.put("msg", "AI生成的内容格式错误，请重试");
-                            errorData.put("data", "AI生成的JSON格式不正确，无法解析。请尝试修改旅行需求后重试。");
-                            ServerSentEvent<String> errorEvent = serializeToSse("ai-error", errorData);
-                            return Mono.just(errorEvent);
-                        } catch (Exception e) {
-                            log.error("生成结构化旅行计划失败", e);
-                            // 构建错误响应
-                            Map<String, Object> errorData = new HashMap<>();
-                            errorData.put("code", 500);
-                            errorData.put("msg", "系统内部错误");
-                            errorData.put("data", "生成旅行计划时发生错误，请稍后重试。");
-                            ServerSentEvent<String> errorEvent = serializeToSse("ai-error", errorData);
-                            return Mono.just(errorEvent);
-                        }
-                    })
-                    .subscribeOn(Schedulers.boundedElastic())
-                    .onErrorResume(e -> {
-                        log.error("处理AI响应时发生错误", e);
-                        return buildErrorSseResponse(500, "系统错误：" + e.getMessage());
-                    });
-
+            loginUser = this.getLoginUser();
         } catch (IllegalAccessException e) {
             log.error("认证失败", e);
-            return buildErrorSseResponse(401, e.getMessage());
-        } catch (Exception e) {
-            log.error("AI接口异常", e);
-            return buildErrorSseResponse(500, "系统内部错误：" + e.getMessage());
+            return Flux.just("data:" + toJson(Result.error("用户未登录或令牌无效")) + "\n\n");
+        }
+
+        Long userId = loginUser.getId();
+        String redisKey = AI_SESSION_KEY_PREFIX + userId;
+
+        String userMessage;
+        AiDTO historyAiDTO = (AiDTO) redisTemplate.opsForValue().get(redisKey);
+
+        if (historyAiDTO == null) {
+            // 首次请求：校验必填项
+            if (aiDTO.getPeopleNum() == null || aiDTO.getPeopleNum().isBlank()) {
+                return Flux.just("data:" + toJson(Result.error("出行人数不能为空")) + "\n\n");
+            }
+            if (aiDTO.getPlanDays() == null || aiDTO.getPlanDays().isBlank()) {
+                return Flux.just("data:" + toJson(Result.error("旅游天数不能为空")) + "\n\n");
+            }
+            if (aiDTO.getTravelType() == null || aiDTO.getTravelType().isBlank()) {
+                return Flux.just("data:" + toJson(Result.error("出行类型不能为空")) + "\n\n");
+            }
+            userMessage = aiDTO.userMessages()
+                    + "content的具体内容Markdown格式的字符串（必须不少于1000字），"
+                    + "如果时间足够景点可以挑选一些其他符合的，不用局限于所给的几个想去景点，但是注意顺路";
+            redisTemplate.opsForValue().set(redisKey, aiDTO, AI_SESSION_EXPIRE, AI_SESSION_TIME_UNIT);
+        } else {
+            // 后续请求：优化
+            if (aiDTO.getMessage() == null || aiDTO.getMessage().isBlank()) {
+                return Flux.just("data:" + toJson(Result.error("请输入你的旅行优化/新增要求")) + "\n\n");
+            }
+            userMessage = aiDTO.userMessages(historyAiDTO, aiDTO.getMessage())
+                    + "content的具体内容Markdown格式的字符串（必须不少于1000字），"
+                    + "如果时间足够景点可以挑选一些其他符合的，不用局限于所给的几个想去景点，但是注意顺路";
+            redisTemplate.expire(redisKey, AI_SESSION_EXPIRE, AI_SESSION_TIME_UNIT);
+        }
+
+        log.info("AI消息拼接完成：{}", userMessage);
+
+        // ========== 阶段二：流式输出 ==========
+        final Long finalUserId = userId;
+        final AiDTO finalAiDTO = aiDTO;
+        final String finalUserMessage = userMessage;
+
+        // 用 StringBuilder 在流式过程中收集完整内容
+        StringBuilder fullContent = new StringBuilder();
+
+        Flux<String> stream = aiService.generateTravelPlan(finalUserId, finalUserMessage);
+
+        return stream
+                // 每收到一个 token，追加到 fullContent 并直接推送给前端
+                .doOnNext(fullContent::append)
+
+                // 流结束后，异步存储到 Redis（不阻塞流式输出）
+                .doOnComplete(() -> {
+                    try {
+                        String markdown = fullContent.toString();
+                        if (markdown.isEmpty()) {
+                            log.warn("AI生成内容为空，跳过Redis存储");
+                            return;
+                        }
+
+                        String conversationKey = AI_CONVERSATION_KEY_PREFIX + finalUserId
+                                + ":" + System.currentTimeMillis();
+                        Map<String, Object> conversationData = new HashMap<>();
+                        conversationData.put("memoryId", finalUserId);
+                        conversationData.put("userMessage", finalUserMessage);
+                        conversationData.put("aiMessage", markdown);
+                        conversationData.put("travelWay", finalAiDTO.getTravelWay());
+                        conversationData.put("travelType", finalAiDTO.getTravelType());
+                        conversationData.put("timestamp", System.currentTimeMillis());
+
+                        redisTemplate.opsForValue().set(
+                                conversationKey,
+                                conversationData,
+                                AI_CONVERSATION_EXPIRE,
+                                AI_CONVERSATION_TIME_UNIT
+                        );
+                        log.info("对话数据已存储到Redis，键：{}", conversationKey);
+                    } catch (Exception e) {
+                        log.error("存储对话数据到Redis失败", e);
+                    }
+                })
+
+                // 流异常时兜底处理
+                .doOnError(e -> log.error("AI流式生成异常，userId={}", finalUserId, e));
+    }
+
+    // ========== 辅助方法 ==========
+    private String toJson(Result<?> result) {
+        try {
+            return OBJECT_MAPPER.writeValueAsString(result);
+        } catch (JsonProcessingException e) {
+            log.error("JSON序列化失败", e);
+            return "{\"code\":500,\"msg\":\"系统内部错误\"}";
         }
     }
 
@@ -501,45 +482,5 @@ public class AiChatController {
             throw new IllegalAccessException("用户未登录或令牌无效");
         }
         return (LoginUser) principal;
-    }
-
-    private ServerSentEvent<String> serializeToSse(String event, Object data) {
-        try {
-            String json = OBJECT_MAPPER.writeValueAsString(data);
-            return ServerSentEvent.<String>builder()
-                    .id(String.valueOf(System.currentTimeMillis()))
-                    .event(event)
-                    .data(json)
-                    .build();
-        } catch (JsonProcessingException e) {
-            log.error("SSE序列化失败", e);
-            String fallback = "{\"code\":500,\"msg\":\"SSE序列化内部错误\"}";
-            return ServerSentEvent.<String>builder()
-                    .event("ai-error")
-                    .data(fallback)
-                    .build();
-        }
-    }
-
-    private Flux<ServerSentEvent<String>> buildErrorSseResponse(int code, String message) {
-        Map<String, Object> errorData = new HashMap<>();
-        errorData.put("code", code);
-        errorData.put("msg", message);
-
-        try {
-            String jsonData = OBJECT_MAPPER.writeValueAsString(errorData);
-            ServerSentEvent<String> event = ServerSentEvent.<String>builder()
-                    .event("ai-error")
-                    .data(jsonData)
-                    .build();
-            return Flux.just(event);
-        } catch (JsonProcessingException e) {
-            log.error("构建错误SSE时序列化失败", e);
-            ServerSentEvent<String> fallback = ServerSentEvent.<String>builder()
-                    .event("ai-error")
-                    .data("{\"code\":500,\"msg\":\"内部序列化错误\"}")
-                    .build();
-            return Flux.just(fallback);
-        }
     }
 }
