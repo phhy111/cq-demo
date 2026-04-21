@@ -101,4 +101,22 @@
     <insert id="save">
         insert into food_categories(food_id,category_id,name,details,image,status,created_at) values(#{food_id},#{category_id},#{name},#{details},#{image},#{status},#{createdAt})
     </insert>
+
+    <!-- 查询推荐美食 -->
+    <select id="selectRecommendedFoods" resultMap="FoodWithCategoryMap">
+        SELECT food_categories.id,
+               food_categories.created_at,
+               food_categories.name as food_name,
+               food_categories.details,
+               food_categories.image,
+               categories.name as category_name,
+               (SELECT IFNULL(COUNT(*), 0) FROM likes l WHERE l.target_type = 2 AND l.target_id = food_categories.id) as like_count,
+               (SELECT IFNULL(COUNT(*), 0) FROM collections c WHERE c.target_type = 2 AND c.target_id = food_categories.id) as collect_count,
+               (SELECT IFNULL(COUNT(*), 0) FROM comments cm WHERE cm.target_type = 2 AND cm.target_id = food_categories.id AND cm.status = 1) as comment_count
+        FROM food_categories
+        JOIN categories ON food_categories.category_id = categories.id
+        WHERE food_categories.status = 1
+        ORDER BY (like_count * 3 + collect_count * 2 + comment_count) DESC
+        LIMIT 10
+    </select>
 </mapper>

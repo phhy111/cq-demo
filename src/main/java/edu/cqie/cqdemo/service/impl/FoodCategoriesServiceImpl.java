@@ -1,18 +1,18 @@
 package edu.cqie.cqdemo.service.impl;
 
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import edu.cqie.cqdemo.entity.Collections;
-import edu.cqie.cqdemo.entity.FoodCategories;
-import edu.cqie.cqdemo.entity.LoginUser;
-import edu.cqie.cqdemo.mapper.FoodCategoriesMapper;
-import edu.cqie.cqdemo.service.FoodCategoriesService;
-import lombok.AllArgsConstructor;
+import java.util.Date;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.List;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+
+import edu.cqie.cqdemo.entity.FoodCategories;
+import edu.cqie.cqdemo.entity.LoginUser;
+import edu.cqie.cqdemo.mapper.FoodCategoriesMapper;
+import edu.cqie.cqdemo.service.FoodCategoriesService;
 
 @Service
 public class FoodCategoriesServiceImpl extends ServiceImpl<FoodCategoriesMapper, FoodCategories> implements FoodCategoriesService {
@@ -79,6 +79,11 @@ public class FoodCategoriesServiceImpl extends ServiceImpl<FoodCategoriesMapper,
     @Override
     public int saveFood(FoodCategories foodCategories) {
         return foodCategoriesMapper.save(foodCategories);
+    }
+
+    @Override
+    public List<FoodCategories> getRecommendedFoods() {
+        return foodCategoriesMapper.selectRecommendedFoods();
     }
 
     private Long getCurrentUserId() {
