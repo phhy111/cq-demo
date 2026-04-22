@@ -117,6 +117,6 @@
         JOIN categories ON food_categories.category_id = categories.id
         WHERE food_categories.status = 1
         ORDER BY (like_count * 3 + collect_count * 2 + comment_count) DESC
-        LIMIT 10
+        LIMIT 9
     </select>
 </mapper>
