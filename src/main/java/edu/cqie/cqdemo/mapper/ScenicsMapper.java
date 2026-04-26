@@ -3,6 +3,7 @@ package edu.cqie.cqdemo.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import edu.cqie.cqdemo.dto.RegionScenicsCountDTO;
 import edu.cqie.cqdemo.dto.ScenicsAndRegionDTO;
 import edu.cqie.cqdemo.dto.ScenicsDTO;
 import edu.cqie.cqdemo.entity.Scenics;
@@ -90,4 +91,10 @@ public interface ScenicsMapper extends BaseMapper<Scenics> {
      * @return
      */
     boolean updateScenics(Scenics scenics);
+
+    /**
+     * 查询每个区域景点数量
+     * @return
+     */
+    List<RegionScenicsCountDTO> getRegionScenicsCount();
 }

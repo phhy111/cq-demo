@@ -3,6 +3,7 @@ package edu.cqie.cqdemo.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
+import edu.cqie.cqdemo.dto.RegionScenicsCountDTO;
 import edu.cqie.cqdemo.dto.ScenicsAndRegionDTO;
 import edu.cqie.cqdemo.dto.ScenicsDTO;
 import edu.cqie.cqdemo.entity.Scenics;
@@ -81,4 +82,9 @@ public interface ScenicsService extends IService<Scenics> {
      * @param scenics
      */
     public boolean updateScenicsInfo(Scenics scenics);
+    /**
+     * 查询每个区域景点数量
+     * @return
+     */
+    public List<RegionScenicsCountDTO> getRegionScenicsCount();
 }

@@ -1,8 +1,7 @@
 package edu.cqie.cqdemo.config;
 
-import edu.cqie.cqdemo.filter.JwtAuthenticationFilter;
-import edu.cqie.cqdemo.service.impl.UserDetailsServiceImpl;
-import lombok.RequiredArgsConstructor;
+import java.util.Arrays;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,13 +12,14 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
+import edu.cqie.cqdemo.filter.JwtAuthenticationFilter;
+import edu.cqie.cqdemo.service.impl.UserDetailsServiceImpl;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Spring Security配置
@@ -76,6 +76,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/sendCode").permitAll()
                         .requestMatchers("/api/comments/AddCommentsInfo").permitAll()
+                        .requestMatchers("/api/foods/recommended").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )

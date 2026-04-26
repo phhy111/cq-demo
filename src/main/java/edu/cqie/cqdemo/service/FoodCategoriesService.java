@@ -1,12 +1,10 @@
 package edu.cqie.cqdemo.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
-import edu.cqie.cqdemo.entity.Collections;
-import edu.cqie.cqdemo.entity.FoodCategories;
-import org.apache.ibatis.annotations.Param;
-
-import java.util.Date;
 import java.util.List;
+
+import com.baomidou.mybatisplus.extension.service.IService;
+
+import edu.cqie.cqdemo.entity.FoodCategories;
 
 public interface FoodCategoriesService extends IService<FoodCategories> {
     List<FoodCategories> getAllStatus();
@@ -22,5 +20,7 @@ public interface FoodCategoriesService extends IService<FoodCategories> {
     int deletefoodselcet(Integer targetid);
     int selectfoodselcet(Integer targetid);
     List<FoodCategories>selectallFoods();
+    int saveFood(FoodCategories foodCategories);
+    List<FoodCategories> getRecommendedFoods();
 
 }

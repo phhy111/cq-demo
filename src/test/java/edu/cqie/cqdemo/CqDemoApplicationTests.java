@@ -6,6 +6,7 @@ import edu.cqie.cqdemo.mapper.FoodCategoriesMapper;
 import edu.cqie.cqdemo.service.AiService;
 import edu.cqie.cqdemo.service.FoodCategoriesService;
 import edu.cqie.cqdemo.service.ShopService;
+import edu.cqie.cqdemo.service.impl.FoodCategoriesServiceImpl;
 import edu.cqie.cqdemo.service.impl.ShopServiceImpI;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class CqDemoApplicationTests {
 
     @Autowired
-    private ShopServiceImpI shopService;
+    private FoodCategoriesServiceImpl foodCategoriesServiceImpl;
     @Autowired
     private FoodCategoriesService foodCategoriesService;
     @Autowired
@@ -25,6 +26,7 @@ public class CqDemoApplicationTests {
 
     @Test
     void contextLoads() {
+<<<<<<< HEAD
     }
 
     @Test
@@ -58,3 +60,7 @@ public class CqDemoApplicationTests {
         }
     }
 }
+=======
+        foodCategoriesService.selectallFoods();
+}}
+>>>>>>> 1c5c390ac479ff1b089ab63c2fdf085fb4045f06

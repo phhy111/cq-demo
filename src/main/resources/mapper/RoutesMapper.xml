@@ -79,4 +79,9 @@
         SELECT r.*
         FROM routes r
     </select>
+    <select id="selectPendingReviewCount" resultType="java.lang.Integer">
+        SELECT
+                (SELECT COUNT(*) FROM routes WHERE status = 2) AS pending_route_count,
+                (SELECT COUNT(*) FROM guides WHERE status = 2) AS pending_guide_count;
+    </select>
 </mapper>

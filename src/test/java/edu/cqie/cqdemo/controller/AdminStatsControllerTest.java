@@ -6,16 +6,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
-class RoutesControllerTest {
+class AdminStatsControllerTest {
     @Autowired
-    private RoutesController routesController;
+    private AdminStatsController adminStatsController;
+
     @Test
-    void getRoutesInfo() {
-        routesController.getRoutesListInfo();
+    void getUserGrowth() {
     }
 
     @Test
-    void getRouteWaitAuditCount() {
-        routesController.getRouteWaitAuditCount();
+    void getContentInteractionStats() {
+        adminStatsController.getContentInteractionStats();
     }
 }

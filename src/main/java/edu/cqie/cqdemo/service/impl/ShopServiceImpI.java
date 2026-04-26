@@ -75,6 +75,12 @@ public class ShopServiceImpI implements ShopService {
     public int selecthistory( Integer targetid) {
         return  shopMapper.selectshoplike(getCurrentUserId(),targetid);
     }
+
+    @Override
+    public List<Shop> selectallshop() {
+        return shopMapper.selectallshop();
+    }
+
     private Long getCurrentUserId() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal instanceof LoginUser) {

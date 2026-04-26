@@ -74,6 +74,13 @@ public class RoutesServiceImpl extends ServiceImpl<RoutesMapper, Routes> impleme
         // 受影响行数 > 0 表示删除成功
         return affectedRows > 0;
     }
+
+    @Override
+    public List<Integer> selectPendingReviewCount() {
+        return routesMapper.selectPendingReviewCount();
+    }
+
+
 }
 
 

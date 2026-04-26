@@ -86,4 +86,8 @@
     <select id="selectshoplike" resultType="java.lang.Integer">
         select count(*) from likes where user_id= #{userid} and target_id= #{targetid} and target_type=2
     </select>
+<!--    获取所有店铺-->
+    <select id="selectallshop" resultType="edu.cqie.cqdemo.entity.Shop">
+        select id,name from foods
+    </select>
 </mapper>

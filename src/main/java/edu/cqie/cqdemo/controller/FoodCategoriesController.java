@@ -1,13 +1,20 @@
 package edu.cqie.cqdemo.controller;
 
+import java.util.Date;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import edu.cqie.cqdemo.common.Result;
 import edu.cqie.cqdemo.entity.FoodCategories;
 import edu.cqie.cqdemo.service.FoodCategoriesService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.Date;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/foods")
@@ -130,8 +137,42 @@ public class FoodCategoriesController {
     }
     @GetMapping("/getAllStatusFoods")
     public Result<List<FoodCategories>> getAllStatusFoods(){
-        System.out.println("获取所有状态的美食数据");
-        List<FoodCategories> foods = foodscategoriesService.getAllStatus();
+        List<FoodCategories> foods = foodscategoriesService.selectallFoods();
         return Result.success(foods);
+    }
+    @PostMapping("/save")
+    public Result save(@RequestBody FoodCategories foodCategories){
+        try {
+            // 设置默认值
+            if (foodCategories.getStatus() == null) {
+                foodCategories.setStatus(2); // 待审核
+            }
+            if (foodCategories.getCreatedAt() == null) {
+                foodCategories.setCreatedAt(new Date());
+            }
+
+            int result = foodscategoriesService.saveFood(foodCategories);
+            if (result > 0) {
+                return Result.success("保存成功");
+            } else {
+                return Result.error("保存失败");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("保存失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取推荐美食列表
+     */
+    @GetMapping("/recommended")
+    public Result<List<FoodCategories>> getRecommendedFoods() {
+        List<FoodCategories> recommendedFoods = foodscategoriesService.getRecommendedFoods();
+        if (recommendedFoods != null) {
+            return Result.success(recommendedFoods);
+        } else {
+            return Result.error("查询失败");
+        }
     }
 }
