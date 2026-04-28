@@ -62,7 +62,7 @@ public class AuthController {
 
 
     /**
-     * 登录接口（保持不变，登录仍用 JSON 接收）
+     * 登录接口（双Token机制：Access Token + Refresh Token）
      */
     @RedisLog(type = "INFO", module = "USER")
     @PostMapping("/login")
@@ -72,11 +72,19 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(loginDTO.getUsername(), loginDTO.getPassword())
             );
             UserDetails userDetails = userDetailsService.loadUserByUsername(loginDTO.getUsername());
-            String token = jwtUtil.generateToken(userDetails);
 
-            // 登录信息写入 Redis，保证 2 小时时效
-            String loginKey = "login_token:" + userDetails.getUsername();
-            stringRedisTemplate.opsForValue().set(loginKey, token, 30, TimeUnit.MINUTES);
+            // 生成双Token
+            java.util.Map<String, String> tokenPair = jwtUtil.generateTokenPair(userDetails);
+            String accessToken = tokenPair.get("accessToken");
+            String refreshToken = tokenPair.get("refreshToken");
+            String jti = tokenPair.get("jti");
+
+            // 登录信息写入 Redis，使用JTI作为唯一标识
+            String loginKey = "login_token:" + userDetails.getUsername() + ":" + jti;
+            stringRedisTemplate.opsForValue().set(loginKey, accessToken, 7, TimeUnit.DAYS);
+            // 同时存储Refresh Token的映射关系
+            String refreshKey = "refresh_token:" + jti;
+            stringRedisTemplate.opsForValue().set(refreshKey, refreshToken, 7, TimeUnit.DAYS);
 
             // 根据用户名查询用户信息
             Users user = sysUserMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Users>()
@@ -113,9 +121,12 @@ public class AuthController {
                 userBehaviorLogMapper.insert(log);
             }
 
-            // 构建返回结果
+            // 构建返回结果（双Token）
             java.util.Map<String, Object> resultMap = new java.util.HashMap<>();
-            resultMap.put("token", token);
+            resultMap.put("accessToken", accessToken);
+            resultMap.put("refreshToken", refreshToken);
+            resultMap.put("tokenType", "Bearer");
+            resultMap.put("expiresIn", 1800); // 30分钟，单位秒
             resultMap.put("user", user);
 
 

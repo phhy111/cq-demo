@@ -12,6 +12,7 @@ import edu.cqie.cqdemo.mapper.RoutesMapper;
 import edu.cqie.cqdemo.service.AiService;
 import edu.cqie.cqdemo.service.GuidesService;
 import edu.cqie.cqdemo.service.RoutesService;
+import edu.cqie.cqdemo.service.impl.AiServiceFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -41,6 +42,9 @@ public class AiChatController {
 
     @Resource
     private AiService aiService;
+
+    @Autowired
+    private AiServiceFactory aiServiceFactory;
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -425,7 +429,13 @@ public class AiChatController {
         // 用 StringBuilder 在流式过程中收集完整内容
         StringBuilder fullContent = new StringBuilder();
 
-        Flux<String> stream = aiService.generateTravelPlan(finalUserId, finalUserMessage);
+        // 根据用户消息动态路由选择 AI 模型（简单任务走本地 Ollama，复杂任务走云端通义千问）
+        AiService routedAiService = aiServiceFactory.createAiService(finalUserMessage);
+        log.info("AI对话使用动态路由模型，用户消息长度：{}，前20字：{}",
+                finalUserMessage.length(),
+                finalUserMessage.substring(0, Math.min(20, finalUserMessage.length())));
+
+        Flux<String> stream = routedAiService.generateTravelPlan(finalUserId, finalUserMessage);
 
         return stream
                 // 每收到一个 token，追加到 fullContent 并直接推送给前端
