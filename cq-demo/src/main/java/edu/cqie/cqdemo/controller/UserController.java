@@ -28,6 +28,7 @@ import edu.cqie.cqdemo.entity.LoginUser;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.security.SecureRandom;
 
 @RestController
 @RequestMapping("/api/users")
@@ -596,23 +597,27 @@ public class UserController {
             boolean isAdmin = loginUser.getRole() != null && loginUser.getRole() == 1;
 
             if (isAdmin) {
-                // 管理员可重置任意用户密码
-                boolean result = userService.resetPassword(dto.getUserId(), passwordEncoder.encode("123456"));
-                return result ? Result.success("重置用户密码成功") : Result.error("重置用户密码失败");
+                // 管理员可重置任意用户密码，生成随机临时密码
+                String tempPassword = generateTempPassword();
+                boolean result = userService.resetPassword(dto.getUserId(), passwordEncoder.encode(tempPassword));
+                return result ? Result.success("重置用户密码成功，临时密码：" + tempPassword) : Result.error("重置用户密码失败");
             } else {
-                // 普通用户只能重置自己的密码，且必须提供旧密码
+                // 普通用户只能重置自己的密码，且必须提供旧密码和新密码
                 if (!loginUser.getId().equals(dto.getUserId())) {
                     return Result.error("无权重置其他用户的密码");
                 }
                 if (dto.getOldPassword() == null || dto.getOldPassword().isEmpty()) {
                     return Result.error("请输入旧密码");
                 }
+                if (dto.getNewPassword() == null || dto.getNewPassword().length() < 6) {
+                    return Result.error("新密码长度不能少于6位");
+                }
                 // 验证旧密码
                 Users currentUser = userService.getById(dto.getUserId());
                 if (currentUser == null || !passwordEncoder.matches(dto.getOldPassword(), currentUser.getPassword())) {
                     return Result.error("旧密码错误");
                 }
-                boolean result = userService.resetPassword(dto.getUserId(), passwordEncoder.encode("123456"));
+                boolean result = userService.resetPassword(dto.getUserId(), passwordEncoder.encode(dto.getNewPassword()));
                 return result ? Result.success("密码重置成功") : Result.error("密码重置失败");
             }
         }catch (IllegalAccessException e){
@@ -636,5 +641,15 @@ public class UserController {
             log.error("操作失败", e);
             return Result.error("批量禁用用户失败：" + e.getMessage());
         }
+    }
+
+    private String generateTempPassword() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder(8);
+        for (int i = 0; i < 8; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 }

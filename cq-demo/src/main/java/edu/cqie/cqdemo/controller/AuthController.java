@@ -89,7 +89,11 @@ public class AuthController {
             // 根据用户名查询用户信息
             Users user = sysUserMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Users>()
                     .eq(Users::getUsername, loginDTO.getUsername()));
-            System.out.println("当前登录信息"+user);
+            log.info("当前登录信息: {}", user);
+
+            if (user == null) {
+                return Result.error("用户信息不存在");
+            }
 
             // 记录用户行为日志（仅普通用户，role=0）
             if (user.getRole() != null && user.getRole() == 0) {

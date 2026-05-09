@@ -97,9 +97,9 @@ public class ContentController {
      * @param target_type 内容类型：scenic-景点，food-美食，route-路线，guide-攻略，shop-店铺
      * @return 删除结果
      */
-    @DeleteMapping("/{type}/{contentId}")
-    public Result<?> deleteContent(@RequestParam Long target_id,
-                                   @RequestParam String target_type) {
+    @DeleteMapping("/{target_type}/{target_id}")
+    public Result<?> deleteContent(@PathVariable Long target_id,
+                                   @PathVariable String target_type) {
         try {
             switch (target_type.toLowerCase()) {
                 case "scenic":

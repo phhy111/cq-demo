@@ -91,7 +91,8 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments>
 
     @Override
     public List<CommentsDTO> getCommentReplies(Integer commentId, Integer page, Integer size) {
-        List<CommentsDTO> replies = commentsMapper.getCommentReplies(commentId, page, size);
+        int offset = (page - 1) * size;
+        List<CommentsDTO> replies = commentsMapper.getCommentReplies(commentId, size, offset);
         // 更新点赞数从Redis
         updateCommentLikeCountsFromRedis(replies);
         return replies;

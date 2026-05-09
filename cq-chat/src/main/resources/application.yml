@@ -11,7 +11,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/cq?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
     username: root
-    password: 123456
+    password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
 mybatis-plus:
@@ -27,11 +27,11 @@ redis:
     nodes: 127.0.0.1:26379,127.0.0.1:26380,127.0.0.1:26381
 
 jwt:
-  secret: vue-spring-security-demo-1234567890abcdefghijklmn
+  secret: ${JWT_SECRET:}
   access-token-expire: 1800000
 
 netty:
-  port: 9090
+  port: 9091
   boss-threads: 1
   worker-threads: 4
   heartbeat-idle: 60

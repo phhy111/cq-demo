@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.annotations.Delete;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import edu.cqie.cqdemo.entity.LoginUser;
 import edu.cqie.cqdemo.util.OSSOperationUtil;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -497,7 +499,7 @@ public class RoutesController {
     @Scheduled(fixedRate = 5 * 60 * 1000)
     public void syncLikesToMySQL() {
         try {
-            Set<String> keys = redisTemplate.keys("likes:*");
+            List<String> keys = scanKeys("likes:*");
             if (keys != null && !keys.isEmpty()) {
                 int count = 0;
                 for (String key : keys) {
@@ -547,7 +549,7 @@ public class RoutesController {
     @Scheduled(fixedRate = 5 * 60 * 1000)
     public void syncCollectionsToMySQL() {
         try {
-            Set<String> keys = redisTemplate.keys("collections:*");
+            List<String> keys = scanKeys("collections:*");
             if (keys != null && !keys.isEmpty()) {
                 int count = 0;
                 for (String key : keys) {
@@ -847,7 +849,7 @@ public class RoutesController {
      */
     private void cleanRouteFromAllRedisWorks(Integer routeId) {
         try {
-            Set<String> keys = redisTemplate.keys("user_works:*");
+            List<String> keys = scanKeys("user_works:*");
             if (keys != null && !keys.isEmpty()) {
                 for (String key : keys) {
                     List<Object> works = (List<Object>) redisTemplate.opsForValue().get(key);
@@ -872,5 +874,18 @@ public class RoutesController {
     @GetMapping("/getRouteWaitAuditCount")
     public List<Integer> getRouteWaitAuditCount() {
         return routesService.selectPendingReviewCount();
+    }
+
+    private List<String> scanKeys(String pattern) {
+        List<String> keys = new ArrayList<>();
+        redisTemplate.execute((org.springframework.data.redis.core.RedisCallback<Void>) connection -> {
+            var cursor = connection.scan(ScanOptions.scanOptions().match(pattern).count(100).build());
+            while (cursor.hasNext()) {
+                keys.add(new String(cursor.next()));
+            }
+            cursor.close();
+            return null;
+        });
+        return keys;
     }
 }

@@ -14,9 +14,11 @@ import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 @Slf4j
 @Component
@@ -25,12 +27,15 @@ public class WebSocketHandler extends SimpleChannelInboundHandler<WebSocketFrame
     private final ChatService chatService;
     private final OfflineMsgService offlineMsgService;
     private final UserChannelManager userChannelManager;
+    private final ExecutorService businessExecutor;
 
     public WebSocketHandler(ChatService chatService, OfflineMsgService offlineMsgService,
-                            UserChannelManager userChannelManager) {
+                            UserChannelManager userChannelManager,
+                            @Qualifier("businessExecutor") ExecutorService businessExecutor) {
         this.chatService = chatService;
         this.offlineMsgService = offlineMsgService;
         this.userChannelManager = userChannelManager;
+        this.businessExecutor = businessExecutor;
     }
 
     @Override
@@ -69,8 +74,20 @@ public class WebSocketHandler extends SimpleChannelInboundHandler<WebSocketFrame
         }
 
         switch (MessageType.valueOf(type)) {
-            case TEXT, IMAGE, VOICE -> chatService.handleSendMessage(msg);
-            case READ_ACK -> chatService.handleReadAck(msg, msg.getSenderId());
+            case TEXT, IMAGE, VOICE -> businessExecutor.execute(() -> {
+                try {
+                    chatService.handleSendMessage(msg);
+                } catch (Exception e) {
+                    log.error("处理消息失败: {}", e.getMessage(), e);
+                }
+            });
+            case READ_ACK -> businessExecutor.execute(() -> {
+                try {
+                    chatService.handleReadAck(msg, msg.getSenderId());
+                } catch (Exception e) {
+                    log.error("处理已读回执失败: {}", e.getMessage(), e);
+                }
+            });
             case HEARTBEAT -> handleHeartbeat(channel);
             default -> log.warn("未知消息类型: {}", type);
         }
@@ -89,7 +106,7 @@ public class WebSocketHandler extends SimpleChannelInboundHandler<WebSocketFrame
             Long userId = userChannelManager.getUserId(ctx.channel());
             if (userId != null) {
                 log.info("用户 {} WebSocket 握手完成，推送离线消息", userId);
-                pushOfflineMessages(ctx.channel(), userId);
+                businessExecutor.execute(() -> pushOfflineMessages(ctx.channel(), userId));
             }
         }
         super.userEventTriggered(ctx, evt);

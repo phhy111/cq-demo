@@ -4,9 +4,12 @@ import edu.cqie.cqdemo.service.BrowsingHistoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,7 +36,7 @@ public class BrowsingHistorySyncTask {
             log.info("开始同步Redis浏览历史数据到MySQL");
 
             // 扫描所有浏览历史相关的Redis Key
-            Set<String> historyKeys = redisTemplate.keys("browsing_history:*");
+            List<String> historyKeys = scanKeys("browsing_history:*");
             if (historyKeys == null || historyKeys.isEmpty()) {
                 log.info("没有发现浏览历史相关的Redis Key");
                 return;
@@ -81,5 +84,18 @@ public class BrowsingHistorySyncTask {
         } catch (Exception e) {
             log.error("同步Redis浏览历史数据到MySQL失败：", e);
         }
+    }
+
+    private List<String> scanKeys(String pattern) {
+        List<String> keys = new ArrayList<>();
+        redisTemplate.execute((org.springframework.data.redis.core.RedisCallback<Void>) connection -> {
+            var cursor = connection.scan(ScanOptions.scanOptions().match(pattern).count(100).build());
+            while (cursor.hasNext()) {
+                keys.add(new String(cursor.next()));
+            }
+            cursor.close();
+            return null;
+        });
+        return keys;
     }
 }

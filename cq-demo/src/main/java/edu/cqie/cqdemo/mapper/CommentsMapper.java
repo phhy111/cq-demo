@@ -5,6 +5,7 @@ import edu.cqie.cqdemo.dto.CommentsDTO;
 import edu.cqie.cqdemo.entity.Comments;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -37,7 +38,7 @@ public interface CommentsMapper extends BaseMapper<Comments> {
      * @param size 每页大小
      * @return 回复列表
      */
-    List<CommentsDTO> getCommentReplies(Integer commentId, Integer page, Integer size);
+    List<CommentsDTO> getCommentReplies(@Param("commentId") Integer commentId, @Param("size") Integer size, @Param("offset") Integer offset);
     
     /**
      * 获取直接回复某个评论的所有子评论

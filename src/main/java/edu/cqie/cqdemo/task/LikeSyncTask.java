@@ -5,9 +5,11 @@ import edu.cqie.cqdemo.service.LikesService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -30,7 +32,7 @@ public class LikeSyncTask {
     public void syncLikesToMySQL() {
         try {
             // 扫描Redis中所有以"likes:"开头的键
-            Set<String> keys = redisTemplate.keys("likes:*");
+            List<String> keys = scanKeys("likes:*");
             if (keys != null && !keys.isEmpty()) {
                 for (String key : keys) {
                     // 解析key，格式为"likes:targetType:targetId"
@@ -107,5 +109,18 @@ public class LikeSyncTask {
                 log.error("从MySQL同步点赞数据到Redis失败：{}", e.getMessage());
             }
         }
+    }
+
+    private List<String> scanKeys(String pattern) {
+        List<String> keys = new ArrayList<>();
+        redisTemplate.execute((org.springframework.data.redis.core.RedisCallback<Void>) connection -> {
+            var cursor = connection.scan(ScanOptions.scanOptions().match(pattern).count(100).build());
+            while (cursor.hasNext()) {
+                keys.add(new String(cursor.next()));
+            }
+            cursor.close();
+            return null;
+        });
+        return keys;
     }
 }

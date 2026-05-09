@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -170,7 +171,7 @@ public class WorkSyncTask implements ApplicationRunner {
             log.info("开始同步 Redis 作品数据到 MySQL");
 
             // 扫描所有作品相关的 Redis Key
-            Set<String> workKeys = redisTemplate.keys("user_works:*");
+            List<String> workKeys = scanKeys("user_works:*");
             if (workKeys == null || workKeys.isEmpty()) {
                 log.info("没有发现作品相关的 Redis Key");
                 return;
@@ -299,7 +300,7 @@ public class WorkSyncTask implements ApplicationRunner {
             log.info("开始检查 Redis 与 MySQL 作品数据一致性");
 
             // 先检查 Redis 中是否有作品数据
-            Set<String> workKeys = redisTemplate.keys("user_works:*");
+            List<String> workKeys = scanKeys("user_works:*");
             if (workKeys == null || workKeys.isEmpty()) {
                 log.info("Redis 中没有作品数据，跳过检查");
                 return;
@@ -339,5 +340,18 @@ public class WorkSyncTask implements ApplicationRunner {
         } catch (Exception e) {
             log.error("检查作品数据一致性失败：", e);
         }
+    }
+
+    private List<String> scanKeys(String pattern) {
+        List<String> keys = new ArrayList<>();
+        redisTemplate.execute((org.springframework.data.redis.core.RedisCallback<Void>) connection -> {
+            var cursor = connection.scan(ScanOptions.scanOptions().match(pattern).count(100).build());
+            while (cursor.hasNext()) {
+                keys.add(new String(cursor.next()));
+            }
+            cursor.close();
+            return null;
+        });
+        return keys;
     }
 }

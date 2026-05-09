@@ -36,7 +36,7 @@ spring:
             allowCredentials: false
 
 jwt:
-  secret: vue-spring-security-demo-1234567890abcdefghijklmn
+  secret: ${JWT_SECRET}
 
 # 不需要鉴权的白名单
 auth:

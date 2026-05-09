@@ -109,7 +109,7 @@ public class FoodCategoriesController {
     }
     @PostMapping("/addfoodselcet")
     public Result<String> addfoodselcet(@RequestParam Integer targetid){
-        System.out.println("传入的美食id"+targetid);
+        log.debug("传入的美食id: {}", targetid);
         int result=foodscategoriesService.addfoodselcet(targetid);
         if(result>0){
             return Result.success("成功添加收藏");

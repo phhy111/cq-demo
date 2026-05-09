@@ -131,7 +131,7 @@
           AND c.status = 1
         ORDER BY
             c.like_count DESC
-        LIMIT #{size} OFFSET ${(page - 1) * size}
+        LIMIT #{size} OFFSET #{offset}
     </select>
 
     <!--  获取直接回复某个评论的所有子评论  -->

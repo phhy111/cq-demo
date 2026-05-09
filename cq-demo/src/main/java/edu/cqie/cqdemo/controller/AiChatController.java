@@ -18,6 +18,7 @@ import edu.cqie.cqdemo.service.impl.AiServiceFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
@@ -100,7 +101,7 @@ public class AiChatController {
             }
 
             String pattern = AI_CONVERSATION_KEY_PREFIX + userId + ":*";
-            Set<String> conversationKeys = redisTemplate.keys(pattern);
+            List<String> conversationKeys = scanKeys(pattern);
 
             Map<String, Object> targetConversation = null;
             if (conversationKeys != null && !conversationKeys.isEmpty()) {
@@ -146,7 +147,7 @@ public class AiChatController {
             Long userId = loginUser.getId();
 
             String pattern = AI_CONVERSATION_KEY_PREFIX + userId + ":*";
-            Set<String> conversationKeys = redisTemplate.keys(pattern);
+            List<String> conversationKeys = scanKeys(pattern);
 
             List<Map<String, Object>> conversationHistory = new ArrayList<>();
 
@@ -188,7 +189,7 @@ public class AiChatController {
     }
 
     @PostMapping("/addChatMessage")
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @RateLimit(limit = 20, timeoutSeconds = 60, key = "ai-add-message")
     public Result<Map<String, Object>> addChatMessage(@RequestBody Map<String, Object> request) {
         try {
@@ -271,7 +272,7 @@ public class AiChatController {
             }
 
             String pattern = AI_CONVERSATION_KEY_PREFIX + userId + ":*";
-            Set<String> conversationKeys = redisTemplate.keys(pattern);
+            List<String> conversationKeys = scanKeys(pattern);
 
             boolean deleted = false;
             if (conversationKeys != null && !conversationKeys.isEmpty()) {
@@ -493,5 +494,18 @@ public class AiChatController {
             throw new IllegalAccessException("用户未登录或令牌无效");
         }
         return (LoginUser) principal;
+    }
+
+    private List<String> scanKeys(String pattern) {
+        List<String> keys = new ArrayList<>();
+        redisTemplate.execute((org.springframework.data.redis.core.RedisCallback<Void>) connection -> {
+            var cursor = connection.scan(ScanOptions.scanOptions().match(pattern).count(100).build());
+            while (cursor.hasNext()) {
+                keys.add(new String(cursor.next()));
+            }
+            cursor.close();
+            return null;
+        });
+        return keys;
     }
 }

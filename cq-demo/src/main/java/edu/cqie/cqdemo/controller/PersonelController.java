@@ -2,6 +2,7 @@ package edu.cqie.cqdemo.controller;
 
 import edu.cqie.cqdemo.entity.Users;
 import edu.cqie.cqdemo.service.PersonerlService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/personel")
 public class PersonelController {
@@ -29,8 +31,7 @@ public class PersonelController {
     }
     @PostMapping("/updatePhone")
     public Map<String,Object> updateUserphone(@RequestBody Users request){
-        System.out.println("获取前端的id"+request.getId());
-        System.out.println("获取前端的phone"+request.getPhone());
+        log.debug("获取前端的id: {}, phone: {}", request.getId(), request.getPhone());
         int result=personerlService.updateUserphone(request.getId(),request.getPhone());
         Map<String,Object> response=new HashMap<>();
         if(result>0){
@@ -44,8 +45,7 @@ public class PersonelController {
     }
     @PostMapping("/updatePassword")
     public Map<String,Object> updatepassword(@RequestBody Users request){
-        System.out.println("获取前端的id"+request.getId());
-        System.out.println("获取前端的密码"+request.getPassword());
+        log.debug("获取前端的id: {}", request.getId());
         int result=personerlService.updateUserpassword(request.getId(),request.getPassword());
         Map<String,Object> response=new HashMap<>();
         if(result>0){
@@ -75,11 +75,9 @@ public class PersonelController {
     public Map<String, Object> updatePassword(@RequestBody Users request) {
         // 1. 获取原始密码
         String rawPassword = request.getPassword();
-        System.out.println("原始密码：" + rawPassword);
 
         // 2. 使用 PasswordEncoder 加密密码
         String encodedPassword = passwordEncoder.encode(rawPassword);
-        System.out.println("加密后的密码：" + encodedPassword);
         // 3. 将加密后的密码设置回 request 对象
         request.setPassword(encodedPassword);
 

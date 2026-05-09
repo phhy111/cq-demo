@@ -12,10 +12,12 @@ import edu.cqie.cqdemo.util.OSSOperationUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -512,7 +514,7 @@ public class GuidesController {
      */
     private void cleanGuideFromAllRedisWorks(Integer guideId) {
         try {
-            Set<String> keys = redisTemplate.keys("user_works:*");
+            List<String> keys = scanKeys("user_works:*");
             if (keys != null && !keys.isEmpty()) {
                 for (String key : keys) {
                     List<Object> works = (List<Object>) redisTemplate.opsForValue().get(key);
@@ -529,5 +531,18 @@ public class GuidesController {
         } catch (Exception e) {
             log.warn("清理 Redis 作品列表中的攻略失败：{}", e.getMessage());
         }
+    }
+
+    private List<String> scanKeys(String pattern) {
+        List<String> keys = new ArrayList<>();
+        redisTemplate.execute((org.springframework.data.redis.core.RedisCallback<Void>) connection -> {
+            var cursor = connection.scan(ScanOptions.scanOptions().match(pattern).count(100).build());
+            while (cursor.hasNext()) {
+                keys.add(new String(cursor.next()));
+            }
+            cursor.close();
+            return null;
+        });
+        return keys;
     }
 }

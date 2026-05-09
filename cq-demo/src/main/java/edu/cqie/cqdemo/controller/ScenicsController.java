@@ -568,7 +568,7 @@ public class ScenicsController {
                 return Result.error("添加失败");
             }
         } else {
-            System.out.println("图片为空");
+            log.warn("图片为空");
             return Result.error("图片为空");
         }
     }

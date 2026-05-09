@@ -59,6 +59,7 @@ public class CommentsController {
 
     // 用于存储点赞状态查询的同步锁，防止缓存穿透
     private final ConcurrentHashMap<String, Object> likeLocks = new ConcurrentHashMap<>();
+    private static final int MAX_LOCK_SIZE = 10000;
 
     /**
      * 获取当前登录用户信息
@@ -169,7 +170,7 @@ public class CommentsController {
                 java.util.Map<String, Object> response = new java.util.HashMap<>();
                 response.put("message", "评论添加成功");
                 response.put("user", user);
-                System.out.println("response:"+response);
+                log.debug("response: {}", response);
                 return Result.success(response);
             }else{
                 return Result.success("用户未登录");
@@ -225,7 +226,7 @@ public class CommentsController {
                 size = 10;
             }
             List<CommentsDTO> replies = commentsService.getCommentReplies(commentId, page, size);
-            System.out.println("replies:"+replies);
+            log.debug("replies: {}", replies);
             return Result.success(replies);
         } catch (Exception e) {
             log.error("操作失败", e);
@@ -237,7 +238,7 @@ public class CommentsController {
     public Result<List<CommentsDTO>> getCommentRepliesRecursive(Integer commentId) {
         try {
             List<CommentsDTO> replies = commentsService.getCommentRepliesRecursive(commentId);
-            System.out.println("replies:"+replies);
+            log.debug("replies: {}", replies);
             return Result.success(replies);
         } catch (Exception e) {
             log.error("操作失败", e);
@@ -251,7 +252,7 @@ public class CommentsController {
         try
         {
             List<CommentsDTO> listComments = commentsService.getRoutesComments(targetId,targetType);
-            System.out.println("listComments:"+listComments);
+            log.debug("listComments: {}", listComments);
             return Result.success(listComments);
         }catch (Exception e)
         {
@@ -266,7 +267,7 @@ public class CommentsController {
         try
         {
             List<CommentsDTO> listComments = commentsService.getRoutesComments(targetId,targetType);
-            System.out.println("listComments:"+listComments);
+            log.debug("listComments: {}", listComments);
             return Result.success(listComments);
         }catch (Exception e)
         {
@@ -372,6 +373,7 @@ public class CommentsController {
             } else {
                 // Redis中不存在，使用同步锁确保只有一个请求打到MySQL
                 String lockKey = "lock:like:" + likes.getTargetType() + ":" + likes.getTargetId() + ":" + likes.getUserId();
+                cleanupLocksIfNeeded();
                 Object lock = likeLocks.computeIfAbsent(lockKey, k -> new Object());
 
                 synchronized (lock) {
@@ -430,6 +432,7 @@ public class CommentsController {
             } else {
                 // Redis中不存在，使用同步锁确保只有一个请求打到MySQL
                 String lockKey = "lock:like:count:" + targetType + ":" + targetId;
+                cleanupLocksIfNeeded();
                 Object lock = likeLocks.computeIfAbsent(lockKey, k -> new Object());
 
                 synchronized (lock) {
@@ -465,4 +468,9 @@ public class CommentsController {
         }
     }
 
+    private void cleanupLocksIfNeeded() {
+        if (likeLocks.size() > MAX_LOCK_SIZE) {
+            likeLocks.clear();
+        }
+    }
 }

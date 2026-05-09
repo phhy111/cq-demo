@@ -53,7 +53,7 @@ public class RegionsController {
         if (regionsService.getScenicsAndRegionName() != null){
             return Result.success(regionsService.getScenicsAndRegionName());
         }else {
-            System.out.println("获取景区详细信息以及对应的区县信息失败");
+            log.error("获取景区详细信息以及对应的区县信息失败");
             return Result.error("获取景区详细信息以及对应的区县信息失败");
         }
     }
