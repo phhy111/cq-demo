@@ -1,0 +1,105 @@
+spring:
+  application:
+    name: cq-demo
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+  profiles:
+    active: secrets
+  datasource:
+    url: jdbc:mysql://localhost:3306/cq?useUnicode=true&characterEncoding=utf-8&serverEncoding=utf8mb4&serverTimezone=GMT%2B8
+    username: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 20MB
+      file-size-threshold: 1MB
+
+  mvc:
+    static-path-pattern: /img/**
+  web:
+    resources:
+      static-locations: file:${user.dir}/src/main/java/edu/cqie/cqdemo/img/
+
+  mail:
+    host: smtp.qq.com
+    username: 2686262955@qq.com
+    port: 587
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+jwt:
+  access-token-expire: 1800000
+  refresh-token-expire: 604800000
+  token-header: Authorization
+  token-prefix: Bearer
+
+aliyun:
+  oss:
+    endpoint: oss-cn-chengdu.aliyuncs.com
+    bucketName: cq-resource
+    prefix: https://cq-resource.oss-cn-chengdu.aliyuncs.com/
+
+ollama:
+  base-url: http://localhost:11434
+  model-name: qwen2.5:7b
+
+langchain4j:
+  community:
+    dashscope:
+      chat-model:
+        model-name: qwen-max
+      streaming-chat-model:
+        model-name: qwen-max
+  openai:
+    embedding-model:
+      model-name: text-embedding-3-small
+
+redis:
+  sentinel:
+    master-name: mymaster
+    nodes: 127.0.0.1:26379,127.0.0.1:26380,127.0.0.1:26381
+  connection-timeout: 30
+  embedding:
+    index-name: embedding-index
+    dimension: 1536
+
+rag:
+  document:
+    content-dir: src/main/resources/content
+    chunk-size: 1000
+    chunk-overlap: 200
+  retriever:
+    max-results: 8
+    min-score: 0.6
+    max-context-tokens: 4000
+  chat-memory:
+    max-messages: 15
+  reranker:
+    enabled: true
+    type: pointwise
+
+# 限流配置
+rate-limit:
+  enabled: true
+  default-limit: 60
+  ai-chat-limit: 10
+  ai-chat-timeout-seconds: 60

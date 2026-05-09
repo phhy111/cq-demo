@@ -1,0 +1,13 @@
+package edu.cqie.cqdemo.service;
+
+import edu.cqie.cqdemo.entity.Users;
+import org.apache.ibatis.annotations.Param;
+
+public interface PersonerlService {
+    public Users getUser(Long id);
+    public int updateUserphone(Long id ,String  phone);
+    public int updateUserpassword(Long id,String password);
+    public int updateUseremail(Long id,String email);
+    public int updateUsersex(Long id,int gender);
+    public int updateUserInfo(Long id, String username, int gender, String phone, String email, String perSignature);
+}

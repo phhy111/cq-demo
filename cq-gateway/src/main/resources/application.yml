@@ -1,0 +1,60 @@
+server:
+  port: 8000
+
+spring:
+  application:
+    name: cq-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+    gateway:
+      routes:
+        # cq-demo 业务服务
+        - id: cq-demo
+          uri: lb://cq-demo
+          predicates:
+            - Path=/api/auth/**, /api/users/**, /api/scenics/**, /api/guides/**, /api/comments/**, /api/foods/**, /api/regions/**, /api/routes/**, /api/admin/**, /api/home/**, /api/announcements/**, /api/browsing/**, /api/collections/**, /api/likes/**, /api/preload/**, /api/redisLog/**, /api/weather/**, /api/map/**, /api/ai/**, /api/sse/**, /api/template/**, /error
+        # cq-chat REST API
+        - id: cq-chat-api
+          uri: lb://cq-chat
+          predicates:
+            - Path=/api/chat/**
+        # cq-chat WebSocket
+        - id: cq-chat-ws
+          uri: lb:ws://cq-chat
+          predicates:
+            - Path=/ws/**
+
+      # 全局 CORS
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: false
+
+jwt:
+  secret: vue-spring-security-demo-1234567890abcdefghijklmn
+
+# 不需要鉴权的白名单
+auth:
+  whitelist:
+    - /api/auth/login
+    - /api/auth/register
+    - /api/auth/sendCode
+    - /api/scenics/GetScenicsInfo
+    - /api/scenics/GetSlideShowInfo
+    - /api/scenics/GetScenicsInfoByRegionId
+    - /api/scenics/GetScenicsInfoByLevel
+    - /api/scenics/GetScenicsInfoByScore
+    - /api/scenics/GetScenicsInfoByLike
+    - /api/scenics/GetRecommendedScenics
+    - /api/guides/GetGuidesInfo
+    - /api/foods/recommended
+    - /api/regions/**
+    - /api/routes/**
+    - /api/home/**
+    - /api/announcements/**
+    - /ws/**

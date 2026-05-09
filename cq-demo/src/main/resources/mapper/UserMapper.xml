@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="edu.cqie.cqdemo.mapper.UserMapper">
+    <update id="resetPassword">
+        UPDATE users
+        SET password = #{password}
+        WHERE id = #{id}
+    </update>
+    <update id="batchDisable">
+        UPDATE `users`
+        SET `user_status` = 1
+        WHERE `id` IN
+        <foreach collection="ids" item="userId" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </update>
+    <select id="getUserName" resultType="java.lang.String">
+        SELECT username
+        FROM users
+        WHERE id = #{id}
+    </select>
+<!--    <select id="findNewUsersByDateRange" resultType="java.util.Map">-->
+<!--        SELECT DATE(created_at) AS date, COUNT(*) AS count-->
+<!--            FROM users-->
+<!--            WHERE created_at BETWEEN #{startDate} AND #{endDate}-->
+<!--            GROUP BY DATE(created_at)-->
+<!--    </select>-->
+    <select id="getUsersInfo" resultType="edu.cqie.cqdemo.entity.Users">
+        SELECT
+            id,
+            username,
+            email,
+            avatar_url,
+            role,
+            password,
+            gender,
+            created_at,
+            phone,
+            per_signature,
+            user_status,
+            ext4,
+            ext5
+        FROM
+            users
+        WHERE
+            role = 0
+        ORDER BY
+            created_at DESC
+    </select>
+</mapper>

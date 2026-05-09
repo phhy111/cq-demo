@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="edu.cqie.cqdemo.mapper.FoodCategoriesMapper">
+<!--美食-->
+    <select id="getAllStatus" resultMap="FoodWithCategoryMap">
+        SELECT food_categories.id,
+               food_categories.food_id,
+               food_categories.category_id,
+               food_categories.created_at,
+               food_categories.name as food_name,
+               food_categories.details,
+               food_categories.image,
+               food_categories.status,
+               categories.name as category_name
+        FROM food_categories
+                 LEFT JOIN categories on food_categories.category_id=categories.id
+        ORDER BY food_categories.created_at DESC
+    </select>
+    <resultMap id="FoodWithCategoryMap" type="edu.cqie.cqdemo.entity.FoodCategories">
+        <id property="id" column="id"/>
+        <result property="foodId" column="food_id"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="name" column="food_name"/>
+        <result property="details" column="details"/>
+        <result property="image" column="image"/>
+        <result property="status" column="status"/>
+        <association property="categories" javaType="edu.cqie.cqdemo.entity.Categories">
+            <id property="id" column="category_id"/>
+            <result property="name" column="category_name"/>
+        </association>
+    </resultMap>
+
+<!--    查询所有美食-->
+    <select id="selectFoods" resultMap="FoodWithCategoryMap">
+        SELECT food_categories.id,
+               food_categories.created_at,
+               food_categories.name as food_name,
+               food_categories.details,
+               food_categories.image,
+               categories.name as category_name FROM food_categories join categories on food_categories.category_id=categories.id where food_categories.status=1
+    </select>
+    <select id="selectallFoods" resultMap="FoodWithCategoryMap">
+        SELECT food_categories.id,
+               food_categories.created_at,
+               food_categories.name as food_name,
+               food_categories.details,
+               food_categories.image,
+               food_categories.status,
+               categories.name as category_name FROM food_categories join categories on food_categories.category_id=categories.id
+    </select>
+
+
+    <!-- 更新美食的点赞数、收藏数和评论数 -->
+    <update id="updateLikeCountAndCollectCount">
+        UPDATE food_categories f
+        SET
+            -- 点赞数：查 likes 表，target_type=2
+            like_count = (
+                SELECT IFNULL(COUNT(*), 0)
+                FROM likes l
+                WHERE l.target_type = 2
+                  AND l.target_id = f.id
+            ),
+            collect_count = (
+                SELECT IFNULL(COUNT(*), 0)
+                FROM collections c
+                WHERE c.target_type = 2
+                  AND c.target_id = f.id
+            ),
+            comment_count = (
+                SELECT IFNULL(COUNT(*), 0)
+                FROM comments cm
+                WHERE cm.target_type = 2
+                  AND cm.target_id = f.id
+                  AND cm.status = 1
+            )
+    </update>
+
+    <select id="selectone" resultMap="FoodWithCategoryMap">
+        SELECT food_categories.id,
+               food_categories.created_at,
+               food_categories.name as food_name,
+               food_categories.details,
+               food_categories.image,
+               categories.name as category_name FROM food_categories join categories on food_categories.category_id=categories.id where food_categories.status=1 and food_categories.id=#{id}
+    </select>
+<!--    添加收藏-->
+    <insert id="addfoodselcet">
+        insert into collections(user_id,target_id,target_type,created_at) values(#{userid},#{targetid},2,#{createat})
+    </insert>
+<!--    取消收藏-->
+    <delete id="deletefoodselcet">
+        delete from collections where user_id=#{userid} and target_id=#{targetid} and target_type=2
+    </delete>
+<!--    查看用户是否已收藏-->
+    <select id="selectfoodselcet" resultType="java.lang.Integer">
+        select count(*) from collections where user_id=#{userid} and target_id=#{targetid} and target_type=2
+    </select>
+<!--    新增美食-->
+    <insert id="save">
+        insert into food_categories(food_id,category_id,name,details,image,status,created_at) values(#{food_id},#{category_id},#{name},#{details},#{image},#{status},#{createdAt})
+    </insert>
+
+    <!-- 查询推荐美食 -->
+    <select id="selectRecommendedFoods" resultMap="FoodWithCategoryMap">
+        SELECT food_categories.id,
+               food_categories.created_at,
+               food_categories.name as food_name,
+               food_categories.details,
+               food_categories.image,
+               categories.name as category_name,
+               (SELECT IFNULL(COUNT(*), 0) FROM likes l WHERE l.target_type = 2 AND l.target_id = food_categories.id) as like_count,
+               (SELECT IFNULL(COUNT(*), 0) FROM collections c WHERE c.target_type = 2 AND c.target_id = food_categories.id) as collect_count,
+               (SELECT IFNULL(COUNT(*), 0) FROM comments cm WHERE cm.target_type = 2 AND cm.target_id = food_categories.id AND cm.status = 1) as comment_count
+        FROM food_categories
+        JOIN categories ON food_categories.category_id = categories.id
+        WHERE food_categories.status = 1
+        ORDER BY (like_count * 3 + collect_count * 2 + comment_count) DESC
+        LIMIT 9
+    </select>
+</mapper>

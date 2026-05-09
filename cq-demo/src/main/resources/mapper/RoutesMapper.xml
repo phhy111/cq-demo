@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="edu.cqie.cqdemo.mapper.RoutesMapper">
+    <update id="updateLikeCountAndCollectCount">
+        UPDATE routes r
+        SET
+            -- 点赞数：查likes表，target_type=3
+            like_count = (
+                SELECT IFNULL(COUNT(*), 0)
+                FROM likes l
+                WHERE l.target_type = 3
+                  AND l.target_id = r.id
+            ),
+            collect_count = (
+                SELECT IFNULL(COUNT(*), 0)
+                FROM collections c
+                WHERE c.target_type = 3
+                  AND c.target_id = r.id
+            ),
+            comment_count = (
+                SELECT IFNULL(COUNT(*), 0)
+                FROM comments cm
+                WHERE cm.target_type = 3
+                  AND cm.target_id = r.id
+                  AND cm.status = 1
+            )
+    </update>
+    <select id="getRoutesListInfo" resultType="edu.cqie.cqdemo.entity.Routes">
+        SELECT
+            *,
+            -- 计算加权综合得分：点赞×0.5 + 收藏×0.3 + 评论×0.2，重命名为composite_score
+            (like_count * 0.5 + collect_count * 0.3 + comment_count * 0.2) AS composite_score
+        FROM
+            routes
+        WHERE status = 1  -- 仅查询状态为1的记录
+        ORDER BY
+            composite_score DESC
+            -- 取得分最高的前5条
+            LIMIT 5
+    </select>
+    <select id="getRoutesListInfoByName" resultType="edu.cqie.cqdemo.entity.Routes">
+        SELECT *
+        FROM routes
+        WHERE status = 1  -- 仅查询状态为1的记录
+        ORDER BY created_at ASC;
+    </select>
+    <select id="getRoutesListInfoByCode" resultType="edu.cqie.cqdemo.entity.Routes">
+        SELECT *
+        FROM routes
+        WHERE status = 1  -- 仅查询状态为1的记录
+        ORDER BY created_at DESC;
+    </select>
+    <select id="getAllHeatS" resultType="edu.cqie.cqdemo.entity.Routes">
+        SELECT *
+        FROM routes
+        WHERE status = 1  -- 仅查询状态为1的记录
+        ORDER BY (like_count * 0.5 + collect_count * 0.3 + comment_count * 0.2)ASC;
+    </select>
+    <select id="getAllHeatJ" resultType="edu.cqie.cqdemo.entity.Routes">
+        SELECT *
+        FROM routes
+        WHERE status = 1  -- 仅查询状态为1的记录
+        ORDER BY (like_count * 0.5 + collect_count * 0.3 + comment_count * 0.2)DESC;
+    </select>
+    <select id="getRouteDetail" resultType="edu.cqie.cqdemo.entity.Routes">
+        SELECT
+            r.*,
+            (SELECT IFNULL(COUNT(*), 0)
+             FROM comments c
+             WHERE c.target_type = 3
+               AND c.target_id = r.id
+               AND c.status = 1) AS comment_count
+        FROM routes r
+        WHERE r.id = #{id}
+    </select>
+
+    <!-- 查询所有状态的路线数据 -->
+    <select id="getAllRoutesWithAllStatus" resultType="edu.cqie.cqdemo.entity.Routes">
+        SELECT r.*
+        FROM routes r
+    </select>
+    <select id="selectPendingReviewCount" resultType="java.lang.Integer">
+        SELECT
+                (SELECT COUNT(*) FROM routes WHERE status = 2) AS pending_route_count,
+                (SELECT COUNT(*) FROM guides WHERE status = 2) AS pending_guide_count;
+    </select>
+</mapper>
