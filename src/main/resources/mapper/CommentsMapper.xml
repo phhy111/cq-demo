@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="edu.cqie.cqdemo.mapper.CommentsMapper">
+
+    <resultMap id="CommentsResult" type="edu.cqie.cqdemo.entity.Comments">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="targetId" column="target_id"/>
+        <result property="targetType" column="target_type"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="replyToId" column="reply_to_id"/>
+        <result property="content" column="content"/>
+        <result property="images" column="images"/>
+        <result property="rating" column="rating"/>
+        <result property="likeCount" column="like_count"/>
+        <result property="replyCount" column="reply_count"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="ext1" column="ext1"/>
+        <result property="ext2" column="ext2"/>
+        <result property="ext3" column="ext3"/>
+        <result property="ext4" column="ext4"/>
+        <result property="ext5" column="ext5"/>
+    </resultMap>
+
+    <resultMap id="CommentsDTOResult" type="edu.cqie.cqdemo.dto.CommentsDTO">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="targetId" column="target_id"/>
+        <result property="targetType" column="target_type"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="replyToId" column="reply_to_id"/>
+        <result property="content" column="content"/>
+        <result property="images" column="images"/>
+        <result property="rating" column="rating"/>
+        <result property="likeCount" column="like_count"/>
+        <result property="replyCount" column="reply_count"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="username" column="username"/>
+        <result property="avatarUrl" column="avatar_url"/>
+        <result property="replyToUsername" column="reply_to_username"/>
+    </resultMap>
+
+    <select id="getScenicsCommentsInfo" resultType="edu.cqie.cqdemo.dto.ScenicsCommentsDTO">
+        SELECT
+            c.id AS comment_id,        -- 评论ID
+            c.parent_id,               -- 父评论ID（0=主评论，>0=回复，关联对应主评论comment_id）
+            c.reply_to_id,             -- 回复给哪个用户的ID（可选，用于显示"XX回复了XX"）
+            c.content,                 -- 评论内容
+            c.images,                  -- 评论图片JSON数组
+            c.rating,                  -- 评分1-5
+            c.like_count,              -- 评论点赞数
+            c.reply_count,             -- 评论回复数
+            c.created_at , -- 评论时间
+            -- 评论发布者信息
+            u.id AS userId,
+            u.username  ,
+            u.avatar_url ,
+            -- 被回复者信息
+            ru.id AS replyToId,
+            ru.username AS reply_to_user_name
+        FROM
+            comments c
+-- 左关联景点表：保证查询的是已上架的合法景点
+                LEFT JOIN scenics s ON c.target_id = s.id AND s.status = 1
+-- 左关联评论发布者表
+                LEFT JOIN users u ON c.user_id = u.id
+-- 左关联被回复者表（可选，不需要回复人信息可删除此关联）
+                LEFT JOIN users ru ON c.reply_to_id = ru.id
+        WHERE
+            c.target_type = 1          -- 固定为1，代表评论的是景点
+          AND c.status = 1
+          AND s.id = #{id}               -- 传入【景点ID】
+        ORDER BY
+            -- 按主评论分组：同一主评论的回复归为一组
+            IF(c.parent_id = 0, c.id, c.parent_id) DESC,
+            c.parent_id ASC,           -- 主评论（parent_id=0）永远在组内最前
+            c.created_at DESC;         -- 组内按评论时间倒序（最新的评论/回复在前）
+    </select>
+
+    <select id="getCommentDetail" resultMap="CommentsDTOResult">
+        SELECT
+            co.*,
+            u.username,
+            u.avatar_url,
+            (SELECT COUNT(*) FROM comments WHERE parent_id = co.id AND status = 1) AS reply_count,
+            ru.username AS reply_to_username
+        FROM
+            comments co
+        LEFT JOIN
+            users u ON co.user_id = u.id
+        LEFT JOIN
+            users ru ON co.reply_to_id = ru.id
+        WHERE
+            co.target_id = #{targetId}
+          AND co.target_type = #{targetType}
+          AND co.parent_id = 0
+          AND co.status = 1
+        ORDER BY
+            co.like_count DESC
+    </select>
+
+    <!--  插入评论信息  -->
+    <insert id="insertCommentsInfo">
+        INSERT INTO comments
+        (`user_id`, `target_id`, `target_type`, `parent_id`,
+         `reply_to_id`, `content`, `images`)
+        VALUES
+            (#{userId}, #{targetId}, #{targetType}, #{parentId},
+             #{replyToId},#{content},#{images})
+    </insert>
+
+    <!--  获取评论的回复列表  -->
+    <select id="getCommentReplies" resultMap="CommentsDTOResult">
+        SELECT
+            c.*,
+            u.username,
+            u.avatar_url,
+            ru.username AS reply_to_username
+        FROM
+            comments c
+        LEFT JOIN
+            users u ON c.user_id = u.id
+        LEFT JOIN
+            users ru ON c.reply_to_id = ru.id
+        WHERE
+            c.parent_id = #{commentId}
+          AND c.status = 1
+        ORDER BY
+            c.like_count DESC
+        LIMIT #{size} OFFSET ${(page - 1) * size}
+    </select>
+
+    <!--  获取直接回复某个评论的所有子评论  -->
+    <select id="getDirectReplies" resultMap="CommentsDTOResult">
+        SELECT
+            c.*,
+            u.username,
+            u.avatar_url,
+            ru.username AS reply_to_username
+        FROM
+            comments c
+        LEFT JOIN
+            users u ON c.user_id = u.id
+        LEFT JOIN
+            users ru ON c.reply_to_id = ru.id
+        WHERE
+            c.parent_id = #{commentId}
+          AND c.status = 1
+        ORDER BY
+            c.like_count DESC
+    </select>
+</mapper>

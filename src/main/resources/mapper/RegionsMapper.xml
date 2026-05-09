@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="edu.cqie.cqdemo.mapper.RegionsMapper">
+
+    <resultMap id="BaseResultMap" type="edu.cqie.cqdemo.entity.Regions">
+            <id property="id" column="id" />
+            <result property="parentId" column="parent_id" />
+            <result property="name" column="name" />
+            <result property="level" column="level" />
+            <result property="coverImg" column="cover_img" />
+            <result property="introduction" column="introduction" />
+            <result property="tags" column="tags" />
+            <result property="sortOrder" column="sort_order" />
+            <result property="status" column="status" />
+            <result property="createdAt" column="created_at" />
+            <result property="updatedAt" column="updated_at" />
+            <result property="ext1" column="ext1" />
+            <result property="ext2" column="ext2" />
+            <result property="ext3" column="ext3" />
+            <result property="ext4" column="ext4" />
+            <result property="ext5" column="ext5" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,parent_id,name,level,cover_img,introduction,
+        tags,sort_order,status,created_at,updated_at,
+        ext1,ext2,ext3,ext4,ext5
+    </sql>
+    <!--  查询区域id与区域名称  -->
+    <select id="getRegionsIdAndName" resultType="edu.cqie.cqdemo.entity.Regions">
+        SELECT `id`,`name`
+        FROM `regions`
+        ORDER BY `id` ASC;
+    </select>
+
+    <select id="popularityComparison" resultType="java.util.Map">
+        SELECT
+            r.id AS region_id,
+            r.name AS region_name,
+            -- 互动数据保留1位小数
+            ROUND(
+                    (SUM(COALESCE(s.like_count, 0) + COALESCE(f.like_count, 0) + COALESCE(g.like_count, 0) + COALESCE(rt.like_count, 0)) * 0.3) +
+                    (SUM(COALESCE(s.collect_count, 0) + COALESCE(f.collect_count, 0) + COALESCE(g.collect_count, 0) + COALESCE(rt.collect_count, 0)) * 0.6) +
+                    (SUM(COALESCE(s.comment_count, 0) + COALESCE(f.comment_count, 0) + COALESCE(g.comment_count, 0) + COALESCE(rt.comment_count, 0)) * 0.4),
+                    1
+            ) AS interactive_data,
+            -- 热度数据保留1位小数
+            ROUND(
+                    (SUM(COALESCE(s.view_count, 0) + COALESCE(f.view_count, 0) + COALESCE(g.view_count, 0)) * 0.1) +
+                    (SUM(COALESCE(s.like_count, 0) + COALESCE(f.like_count, 0) + COALESCE(g.like_count, 0) + COALESCE(rt.like_count, 0)) * 0.5) +
+                    (SUM(COALESCE(s.collect_count, 0) + COALESCE(f.collect_count, 0) + COALESCE(g.collect_count, 0) + COALESCE(rt.collect_count, 0)) * 1.0) +
+                    (SUM(COALESCE(s.comment_count, 0) + COALESCE(f.comment_count, 0) + COALESCE(g.comment_count, 0) + COALESCE(rt.comment_count, 0)) * 0.8),
+                    1
+            ) AS heat_data
+        FROM regions r
+-- 关联各表时新增近一个月时间筛选
+                 LEFT JOIN scenics s ON r.id = s.region_id AND s.status = 1 AND s.created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)
+                 LEFT JOIN foods f ON r.id = f.region_id AND f.status = 1 AND f.created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)
+                 LEFT JOIN guides g ON r.id = g.region_id AND g.status = 1 AND g.created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)
+                 LEFT JOIN routes rt ON r.id = rt.ext1 AND rt.status = 1 AND rt.created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)
+        WHERE r.level = 2
+        GROUP BY r.id, r.name
+        ORDER BY heat_data DESC;
+    </select>
+    <select id="getScenicsAndRegionName" resultType="edu.cqie.cqdemo.dto.ScenicsAndRegionDTO">
+        SELECT
+            s.*,
+            r.name AS region_name
+        FROM
+            scenics s
+                LEFT JOIN
+            regions r
+            ON
+                s.region_id = r.id;
+    </select>
+</mapper>

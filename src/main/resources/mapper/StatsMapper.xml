@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="edu.cqie.cqdemo.mapper.StatsMapper">
+
+    <select id="getContentInteractionStats" resultType="edu.cqie.cqdemo.dto.ContentInteractionStatsDTO">
+        SELECT
+            -- 统计近1个月发布的内容总数
+            (
+                (SELECT COUNT(*) FROM foods WHERE status = 1 AND created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)) +
+                (SELECT COUNT(*) FROM scenics WHERE status = 1 AND created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)) +
+                (SELECT COUNT(*) FROM routes WHERE status = 1 AND created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)) +
+                (SELECT COUNT(*) FROM guides WHERE status = 1 AND created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH))
+                ) AS publish_content_total,
+
+            -- 统计近1个月的互动总数（点赞+评论+收藏）
+            (
+                (SELECT COUNT(*) FROM likes WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)) +
+                (SELECT COUNT(*) FROM comments WHERE status = 1 AND created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)) +
+                (SELECT COUNT(*) FROM collections WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH))
+                ) AS interaction_total
+    </select>
+</mapper>
